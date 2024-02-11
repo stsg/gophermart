@@ -12,19 +12,21 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/go-pkgz/rest"
+
+	"github.com/stsg/gophermart/app/store"
 )
 
 type Server struct {
-	store   Store
-	runAddr string
-	accAddr string
+	Store   store.Store
+	RunAddr string
+	AccAddr string
 }
 
 func (s Server) Run(ctx context.Context) error {
 	log.Printf("[INFO] activate rest server")
 
 	httpServer := &http.Server{
-		Addr:              s.runAddr,
+		Addr:              s.RunAddr,
 		Handler:           s.routes(),
 		ReadHeaderTimeout: 5 * time.Second,
 		WriteTimeout:      30 * time.Second,

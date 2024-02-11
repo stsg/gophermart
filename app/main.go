@@ -1,13 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	log "github.com/go-pkgz/lgr"
 	"github.com/umputun/go-flags"
 
-	"github.com/stsg/gophermart/store"
+	"github.com/stsg/gophermart/app/server"
+	"github.com/stsg/gophermart/app/store"
 )
 
 var opts struct {
@@ -31,9 +33,17 @@ func main() {
 
 	setupLog(opts.Dbg)
 
-	store := store.NewStore(opts.DBURI)
-	srv := NewServer(store, opts.RunAddr, opts.AccAddr)
-	defer srv.Close()
+	dataStore := store.NewStore(opts.DBURI)
+	srv := server.Server{
+		Store:   dataStore,
+		RunAddr: opts.RunAddr,
+		AccAddr: opts.AccAddr,
+	}
+
+	if err := srv.Run(context.Background()); err != nil {
+		log.Printf("[ERROR] server failed, %v", err)
+		os.Exit(1)
+	}
 
 }
 
