@@ -33,7 +33,11 @@ func main() {
 
 	setupLog(opts.Dbg)
 
-	dataStore := store.NewStore(opts.DBURI)
+	dataStore, err := store.NewStore(opts.DBURI)
+	if err != nil {
+		log.Printf("[ERROR] DB connection error: %s", err)
+		os.Exit(1)
+	}
 	srv := server.Server{
 		Store:   dataStore,
 		RunAddr: opts.RunAddr,

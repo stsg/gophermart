@@ -1,0 +1,51 @@
+users: {
+  shape: sql_table
+
+  id: uuid {constraint: PK}
+  login: text not null {constraint: UNQ}
+  password: text not null
+}
+
+tokens: {
+  shape: sql_table
+
+  id: serial {constraint: PK}
+  user_id: uuid {constraint: FK}
+  token: text {constraint: UNQ}
+  created: timestamp
+}
+
+orders: {
+  shape: sql_table
+
+  id: bigserial {constraint: PK}
+  num: bigint {constraint: UNQ}
+  user_id: uuid {constraint: FK}
+}
+
+accruals: {
+  shape: sql_table
+
+  order_num: bigint {constraint: [PK, FK]}
+  user_id: uuid {constraint: FK}
+  amount: numeric (12.2)
+  saved_at: timestamp
+  num: bigint {constraint: UNQ}
+}
+
+withdrawals: {
+  shape: sql_table
+
+  order_num: bigint {constraint: [PK, FK]}
+  user_id: uuid {constraint: FK}
+  amount: numeric (12.2)
+  processed_at: timestamp
+  num: bigint {constraint: UNQ}
+}
+
+users.id -> tokens.user_id
+users.id -> orders.user_id
+users.id -> accruals.user_id
+users.id -> withdrawals.user_id
+orders.num -> accruals.order_num
+orders.num -> withdrawals.order_num

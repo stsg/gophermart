@@ -22,6 +22,11 @@ type Server struct {
 	AccAddr string
 }
 
+type UserRegisterRequest struct {
+	Login    string `json:"login"`
+	Password string `json:"password"`
+}
+
 func (s Server) Run(ctx context.Context) error {
 	log.Printf("[INFO] activate server")
 
@@ -78,8 +83,30 @@ func (s Server) getPing(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s Server) userRegisterCtrl(w http.ResponseWriter, r *http.Request) {
+	var req UserRegisterRequest
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	reqID := middleware.GetReqID(ctx)
+	log.Printf("[INFO] reqID %s userRegisterCtrl", reqID)
+
+	err := render.DecodeJSON(r.Body, &req)
+	if err != nil {
+		log.Printf("[WARN] reqID %s userRegisterCtrl, %v", reqID, err)
+		render.Status(r, http.StatusBadRequest)
+		render.JSON(w, r, errors.Wrap(err, "failed to parse request body"))
+		return
+	}
+
+	log.Printf("[INFO] login %s userRegisterCtrl", req.Login)
+
+	// TODO
+	// registration code
+
+	log.Printf("[INFO] logini %s registered userRegisterCtrl", req.Login)
+	w.Header().Set("Authorization", "Bearer "+req.Login)
 	render.Status(r, http.StatusOK)
-	render.PlainText(w, r, "pong\n")
 }
 
 func (s Server) userLoginCtrl(w http.ResponseWriter, r *http.Request) {

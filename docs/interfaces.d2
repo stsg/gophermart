@@ -1,0 +1,37 @@
+Service: {
+  shape: class
+
+  CreateUser(login, password): (token, error)
+  AuthUser(login, token): (error)
+  SaveOrder(orderNum, userID): (error)
+  GetOrders(userID): (error)
+  GetBalance(userID): (error)
+  Withdraw(userID): (error)
+  Withdrawals(userID): (error)
+}
+
+Server: {
+  shape: class
+
+  userRegisterCtrl(ResponseWriter, Request): ()
+  userLoginCtrl(ResponseWriter, Request): ()
+  userOrdersCtrl(ResponseWriter, Request): ()
+  userGetOrdersCtrl(ResponseWriter, Request): ()
+  userBalanceCtrl(ResponseWriter, Request): ()
+  userWithdrawCtrl(ResponseWriter, Request): ()
+  userGetWithdrawalsCtrl(ResponseWriter, Request): ()
+}
+
+Store: {
+  shape: class
+
+  PutOrder(orderNum, userID): (error)
+  GetOrders(userID): (error)
+  GetBalance(userID): (error)
+  PutWithdraw(userID): (error)
+  GetWithDraws(userID): (error)
+  UpdateOrders(userID): (error)
+}
+
+Server -> Service
+Service -> Store
