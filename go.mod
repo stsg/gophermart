@@ -20,5 +20,6 @@ require (
 	github.com/go-chi/render v1.0.3
 	github.com/go-pkgz/rest v1.19.0
 	github.com/golang-migrate/migrate/v4 v4.17.0
+	github.com/google/uuid v1.6.0
 	github.com/pkg/errors v0.9.1
 )

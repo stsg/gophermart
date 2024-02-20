@@ -2,17 +2,18 @@
 
 package service
 
-import "context"
+import (
+	"context"
 
-type Withdrawal struct {
-	ID     int
-	Login  string
-	Amount int64
-}
+	"github.com/stsg/gophermart/cmd/gophermart/models"
+)
+
 type Service interface {
-	Registration(ctx context.Context, login, password string) (string, error)
-	Login(ctx context.Context, login, password string) (string, error)
-	Withdraw(ctx context.Context, login, password string, amount int64) error
-	Withdrawals(ctx context.Context, login, password string) ([]Withdrawal, error)
-	Balance(ctx context.Context, login, password string) (int64, error)
+	Registration(ctx context.Context, u models.User) (string, error)
+	Login(ctx context.Context, u models.User) (string, error)
+	PostOrders(ctx context.Context, u models.User) error
+	GetOrders(ctx context.Context, u models.User) error
+	GetBalance(ctx context.Context, u models.User) (int64, error)
+	Withdraw(ctx context.Context, u models.User) error
+	GetWithdrawals(ctx context.Context, u models.User) error
 }
