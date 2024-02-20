@@ -9,9 +9,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	log "github.com/go-pkgz/lgr"
-	"github.com/pkg/errors"
-
 	"github.com/go-pkgz/rest"
+	"github.com/pkg/errors"
 
 	"github.com/stsg/gophermart/cmd/gophermart/store"
 )
