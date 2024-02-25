@@ -1,51 +1,34 @@
 users: {
   shape: sql_table
 
-  id: uuid {constraint: PK}
-  login: text not null {constraint: UNQ}
-  password: text not null
-}
-
-tokens: {
-  shape: sql_table
-
-  id: serial {constraint: PK}
-  user_id: uuid {constraint: FK}
-  token: text {constraint: UNQ}
-  created: timestamp
+  uuid: uuid {constraint: PK}
+  login: text {constraint: UNQ}
+  password: text
+  jwt: text
+  createrd_at: timestamptz
+  deleted: boolean
 }
 
 orders: {
   shape: sql_table
 
-  id: bigserial {constraint: PK}
-  num: bigint {constraint: UNQ}
-  user_id: uuid {constraint: FK}
+  id: text {constraint: PK}
+  uid: uuid {constraint: FK}
+  accrual: int
+  status: text
+  updated_at: timestamptz
+  deleted: boolean
 }
 
 accruals: {
   shape: sql_table
 
-  order_num: bigint {constraint: [PK, FK]}
-  user_id: uuid {constraint: FK}
-  amount: numeric (12.2)
-  saved_at: timestamp
-  num: bigint {constraint: UNQ}
+  order_id: text {constraint: [PK, FK]}
+  uid: uuid {constraint: FK}
+  amount: int
+  deleted: boolean
 }
 
-withdrawals: {
-  shape: sql_table
-
-  order_num: bigint {constraint: [PK, FK]}
-  user_id: uuid {constraint: FK}
-  amount: numeric (12.2)
-  processed_at: timestamp
-  num: bigint {constraint: UNQ}
-}
-
-users.id -> tokens.user_id
-users.id -> orders.user_id
-users.id -> accruals.user_id
-users.id -> withdrawals.user_id
-orders.num -> accruals.order_num
-orders.num -> withdrawals.order_num
+users.uuid -> orders.uid
+users.uuid -> accruals.uid
+orders.id -> accruals.order_id
