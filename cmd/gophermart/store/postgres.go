@@ -22,12 +22,12 @@ type Storage struct {
 	// do  func(ctx context.Context, tx pgx.Tx) error
 }
 
-func (s *Storage) Close() {
-	s.db.Close()
+func (p *Storage) Close() {
+	p.db.Close()
 }
 
-func (s *Storage) Ping(ctx context.Context) error {
-	return s.db.Ping(ctx)
+func (p *Storage) Ping(ctx context.Context) error {
+	return p.db.Ping(ctx)
 }
 
 func New(cfg *Config) (*Storage, error) {
