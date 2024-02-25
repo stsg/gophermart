@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	log "github.com/go-pkgz/lgr"
 	"github.com/umputun/go-flags"
 
 	"github.com/stsg/gophermart/cmd/gophermart/server"
-	"github.com/stsg/gophermart/cmd/gophermart/store"
+	"github.com/stsg/gophermart/cmd/gophermart/service"
+	postgres "github.com/stsg/gophermart/cmd/gophermart/store"
 )
 
 var opts struct {
@@ -23,7 +25,7 @@ var opts struct {
 	Dbg     bool   `long:"dbg" description:"debug mode"`
 }
 
-var revision = "dev-0.1.0"
+var revision = "prototype-0.1.0"
 
 func main() {
 	if _, err := flags.Parse(&opts); err != nil {
@@ -33,15 +35,26 @@ func main() {
 
 	setupLog(opts.Dbg)
 
-	dataStore, err := store.NewStore(opts.DBURI)
+	pCfg := &postgres.Config{
+		ConnectionString: opts.DBURI,
+		ConnectTimeout:   10 * time.Second,
+		QueryTimeout:     10 * time.Second,
+		MigrationVersion: 1,
+	}
+
+	storage, err := postgres.New(pCfg)
 	if err != nil {
 		log.Printf("[ERROR] DB connection error: %s", err)
 		os.Exit(1)
 	}
+
+	srvc := service.New(storage, opts.AccAddr)
+	go srvc.RegisterNewOrder(context.Background())
+
 	srv := server.Server{
-		Store:   dataStore,
 		RunAddr: opts.RunAddr,
 		AccAddr: opts.AccAddr,
+		Service: srvc,
 	}
 
 	if err := srv.Run(context.Background()); err != nil {

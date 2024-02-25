@@ -26,5 +26,7 @@ tidy:
 	@ echo
 	go mod tidy
 
+run:
+	go run cmd/gophermart/main.go -d "host=localhost port=5432 user=postgres dbname=postgres password=postgres sslmode=disable"
 
-.PHONY: all build test clean tidy
+.PHONY: all build test clean tidy run

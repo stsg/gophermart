@@ -15,19 +15,17 @@ type User struct {
 }
 
 var (
-	ErrUserNotFound = fmt.Errorf("user not found")
-	ErrUserExists   = fmt.Errorf("user exists")
-	ErrUserWrong    = fmt.Errorf("user wrong")
+	ErrUserNotFound      = fmt.Errorf("user not found")
+	ErrUserExists        = fmt.Errorf("user exists")
+	ErrUserUnauthorized  = fmt.Errorf("user unauthorized")
+	ErrUserWrong         = fmt.Errorf("user wrong")
+	ErrUserWrongPassword = fmt.Errorf("user password wrong")
 )
 
-type AccrualStatus string
-
-const (
-	AccrualStatusNew        AccrualStatus = "NEW"
-	AccrualStatusProcessing AccrualStatus = "PROCESSING"
-	AccrualStatusProcessed  AccrualStatus = "PROCESSED"
-	AccrualStatusInvalid    AccrualStatus = "INVALID"
-)
+type UserRegisterRequest struct {
+	Login    string `json:"login"`
+	Password string `json:"password"`
+}
 
 type Order struct {
 	ID            string        `json:"number" db:"id"`
@@ -43,9 +41,28 @@ var (
 	ErrOrderWrong    = fmt.Errorf("order wrong")
 )
 
-type Withdrawal struct {
+type OrderResponse struct {
+	ID          int64     `json:"-"`
+	Username    string    `json:"-"`
+	Number      string    `json:"order"`
+	Status      string    `json:"status"`
+	Accrual     int64     `json:"accrual,omitempty"`
+	UploadedAt  time.Time `json:"uploaded_at"`
+	ProcessedAt time.Time `json:"-"`
+}
+
+type AccrualStatus string
+
+const (
+	AccrualStatusNew        AccrualStatus = "NEW"
+	AccrualStatusProcessing AccrualStatus = "PROCESSING"
+	AccrualStatusProcessed  AccrualStatus = "PROCESSED"
+	AccrualStatusInvalid    AccrualStatus = "INVALID"
+)
+
+type Accruals struct {
 	OrderID     string    `json:"order" db:"order_id"`
-	UUID        uuid.UUID `json:"-" db:"uid"`
+	UUID        uuid.UUID `json:"uuid" db:"uid"`
 	Amount      int64     `json:"sum" db:"amount"`
 	ProcessedAt time.Time `json:"processed_at" db:"processed_at"`
 }
