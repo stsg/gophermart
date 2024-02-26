@@ -113,13 +113,13 @@ func (p *Storage) SaveOrder(ctx context.Context, user *models.User, order *model
 	return order, nil
 }
 
-func (p *Storage) UpdateOrderStatus(ctx context.Context, orderNumber string, status models.AccrualStatus) (*models.OrderResponse, error) {
+func (p *Storage) UpdateOrderStatus(ctx context.Context, orderNumber string, status models.AccrualStatus, accrual int) (*models.OrderResponse, error) {
 	var uuid uuid.UUID
 	order := models.OrderResponse{}
 	err := p.db.QueryRow(
 		ctx,
-		"UPDATE ORDERS SET STATUS=$1 WHERE ID=$2 RETURNING id, uid, number, status, accrual, updated_at",
-		orderNumber, status).Scan(&order.ID, &uuid, &order.Number, &order.Status, &order.Accrual, &order.UploadedAt)
+		"UPDATE ORDERS SET STATUS=$1, ACCRUAL=$2 WHERE ID=$2 RETURNING id, uid, number, status, accrual, updated_at",
+		orderNumber, status, accrual).Scan(&order.ID, &uuid, &order.Number, &order.Status, &order.Accrual, &order.UploadedAt)
 	if err != nil {
 		log.Printf("[ERROR] cannot update order %s status %v", orderNumber, err)
 		return &order, err

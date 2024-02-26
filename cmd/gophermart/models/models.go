@@ -72,3 +72,9 @@ var (
 	ErrWithdrawalExists   = fmt.Errorf("withdrawal exists")
 	ErrWithdrawalWrong    = fmt.Errorf("withdrawal wrong")
 )
+
+type AccrualResponse struct {
+	Order   string `json:"order"`
+	Status  string `json:"status"`
+	Accrual int    `json:"accrual"`
+}

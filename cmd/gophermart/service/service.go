@@ -5,7 +5,9 @@ package service
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -20,6 +22,7 @@ import (
 	postgres "github.com/stsg/gophermart/cmd/gophermart/store"
 )
 
+// ---------------------------------8<-----------------------------------
 // type Service interface {
 // 	GetUserByLogin(ctx context.Context, login string) (*models.User, error)
 // 	Login(ctx context.Context, login, password string) (string, error)
@@ -29,6 +32,7 @@ import (
 // 	Withdraw(ctx context.Context, login string) error
 // 	GetWithdrawals(ctx context.Context, login string) error
 // }
+// --------------------------------->8-----------------------------------
 
 type Service struct {
 	storage          *postgres.Storage
@@ -49,8 +53,8 @@ func New(storage *postgres.Storage, accrualAddress string) *Service {
 	}
 }
 
-func (s *Service) RegisterNewOrder(ctx context.Context) {
-	log.Printf("[INFO] registerNewOrder")
+func (s *Service) SendToAccrual(ctx context.Context) {
+	log.Printf("[INFO] SendToAccrual")
 	for {
 		log.Print("[INFO] waiting for ChanToAccurual")
 		order := <-s.ChanToAccurual
@@ -71,7 +75,7 @@ func (s *Service) RegisterNewOrder(ctx context.Context) {
 		}
 
 		if resp.StatusCode == http.StatusAccepted || resp.StatusCode == http.StatusConflict {
-			order, _ = s.storage.UpdateOrderStatus(ctx, order.Number, models.AccrualStatusProcessed)
+			order, _ = s.storage.UpdateOrderStatus(ctx, order.Number, models.AccrualStatusProcessed, 0)
 			log.Print("[INFO] trying sending to ChanFromAccurual")
 			s.ChanFromAccurual <- order
 			log.Print("[INFO] sent to ChanFromAccurual")
@@ -80,6 +84,46 @@ func (s *Service) RegisterNewOrder(ctx context.Context) {
 			s.ChanToAccurual <- order
 			log.Print("[INFO] sent to ChanToAccurual")
 
+		}
+		err = resp.Body.Close()
+		if err != nil {
+			log.Printf("[ERROR] cant close request body %v", err)
+		}
+	}
+}
+
+func (s *Service) RecieveFromAccrual(ctx context.Context) {
+	log.Printf("[INFO] RecieveFromAccrual")
+	for {
+		log.Print("[INFO] waiting for ChanFromAccurual")
+		order := <-s.ChanToAccurual
+		log.Print("[INFO] received from ChanFromAccurual")
+		url, err := url.Parse(fmt.Sprintf(s.accrualAddress+"/api/orders/%s", order.Number))
+		if err != nil {
+			log.Printf("[ERROR] accrualAddress invalid %v", err)
+		}
+
+		resp, err := http.Get(url.String())
+		if err != nil {
+			log.Printf("[ERROR] cant get accrual %v", err)
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("[ERROR] cannot get body %v", err)
+		}
+
+		accrual := &models.AccrualResponse{}
+		err = json.Unmarshal(body, accrual)
+		if err != nil {
+			log.Printf("[ERROR] cannot unmarshal body %v", err)
+		}
+
+		if resp.StatusCode == http.StatusOK && accrual.Status == string(models.AccrualStatusProcessed) {
+			_, err := s.storage.UpdateOrderStatus(ctx, order.Number, models.AccrualStatusProcessed, accrual.Accrual)
+			if err != nil {
+				return
+			}
 		}
 		err = resp.Body.Close()
 		if err != nil {
