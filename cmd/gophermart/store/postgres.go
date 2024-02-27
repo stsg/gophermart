@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/stsg/gophermart/cmd/gophermart/lib"
 	"github.com/stsg/gophermart/cmd/gophermart/models"
 )
 
@@ -38,7 +39,7 @@ func New(cfg *Config) (*Storage, error) {
 		return nil, fmt.Errorf("postgres connect: %w", err)
 	}
 
-	if !IsTableExist(pool, "users") {
+	if !lib.IsTableExist(pool, "users") {
 		if err := migrate(pool, cfg.MigrationVersion); err != nil {
 			return nil, err
 		}
@@ -134,10 +135,22 @@ func (p *Storage) UpdateOrderStatus(ctx context.Context, orderNumber string, sta
 	return &order, nil
 }
 
-func IsTableExist(p *pgxpool.Pool, table string) bool {
-	var n int
-
-	err := p.QueryRow(context.Background(), "SELECT 1 FROM information_schema.tables WHERE table_name = $1", table).Scan(&n)
-
-	return err == nil
+func (p *Storage) GetOrders(ctx context.Context, uid uuid.UUID) []models.OrderResponse {
+	var orders []models.OrderResponse
+	rows, err := p.db.Query(ctx, "SELECT id, uid, amount, status, updated_at FROM orders WHERE uid=$1", uid)
+	if err != nil {
+		log.Printf("[ERROR] cannot get orders %v", err)
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		order := models.OrderResponse{}
+		err := rows.Scan(&order.ID, &uid, &order.Amount, &order.Status, &order.UploadedAt)
+		if err != nil {
+			log.Printf("[ERROR] cannot get order %v", err)
+			continue
+		}
+		orders = append(orders, order)
+	}
+	return orders
 }

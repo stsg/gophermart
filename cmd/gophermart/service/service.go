@@ -165,7 +165,6 @@ func (s *Service) Login(ctx context.Context, login, password string) (string, er
 	return jwtString, nil
 }
 
-// TODO should be renamed to Login
 func (s *Service) GetUserByToken(ctx context.Context, token string) (models.User, error) {
 
 	userUUID, err := lib.CheckJWT(token)
@@ -231,4 +230,13 @@ func (s *Service) SaveOrder(ctx context.Context, login string, orderNum string) 
 	}
 
 	return order, nil
+}
+
+func (s *Service) GetOrders(ctx context.Context, login string) ([]models.OrderResponse, error) {
+	user, err := s.storage.GetUserByLogin(ctx, login)
+	if err != nil {
+		log.Printf("[ERROR] user %s not found %v", user.Login, err)
+		return nil, models.ErrUserNotFound
+	}
+	return s.storage.GetOrders(ctx, user.UID), nil
 }

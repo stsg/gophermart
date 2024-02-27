@@ -1,11 +1,13 @@
 package lib
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var secret = "PaBjK!7K$&qMUMTb"
@@ -81,4 +83,12 @@ func checksum(number int64) int64 {
 		number = number / 10
 	}
 	return luhn % 10
+}
+
+func IsTableExist(p *pgxpool.Pool, table string) bool {
+	var n int
+
+	err := p.QueryRow(context.Background(), "SELECT 1 FROM information_schema.tables WHERE table_name = $1", table).Scan(&n)
+
+	return err == nil
 }

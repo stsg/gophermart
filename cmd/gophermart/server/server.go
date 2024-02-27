@@ -214,7 +214,6 @@ func (s Server) userPostOrdersCtrl(w http.ResponseWriter, r *http.Request) {
 	if order.AccrualStatus != models.AccrualStatusNew {
 		log.Printf("[WARN] reqID %s userPostOrdersCtrl, %v", reqID, err)
 		render.Status(r, http.StatusOK)
-		log.Print("[INFO] Status Ok")
 		render.JSON(w, r, errors.Wrap(err, "order uploaded by another user"))
 		return
 	}
@@ -236,21 +235,52 @@ func (s Server) userPostOrdersCtrl(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s Server) userGetOrdersCtrl(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 50*time.Second)
+	defer cancel()
+
+	reqID := middleware.GetReqID(ctx)
+	log.Printf("[INFO] reqID %s userGetOrdersCtrl", reqID)
+
+	user, ok := r.Context().Value(UserContextKey).(models.User)
+	if !ok {
+		render.Status(r, http.StatusUnauthorized)
+		render.PlainText(w, r, "unauthorized\n")
+		return
+	}
+
+	orders, err := s.Service.GetOrders(ctx, user.Login)
+	if err != nil {
+		log.Printf("[ERROR] reqID %s userGetOrdersCtrl, %v", reqID, err)
+		render.Status(r, http.StatusInternalServerError)
+		render.JSON(w, r, errors.Wrap(err, "cannot get orders"))
+		return
+	}
+
+	if len(orders) == 0 {
+		log.Printf("[INFO] reqID %s userGetOrdersCtrl, %v", reqID, err)
+		render.Status(r, http.StatusNoContent)
+		render.JSON(w, r, "no orders")
+		return
+	}
+
 	render.Status(r, http.StatusOK)
-	render.PlainText(w, r, "pong\n")
+	render.JSON(w, r, orders)
 }
 
 func (s Server) userBalanceCtrl(w http.ResponseWriter, r *http.Request) {
-	render.Status(r, http.StatusOK)
-	render.PlainText(w, r, "pong\n")
+	// TODO: implement balance
+	render.Status(r, http.StatusUnavailableForLegalReasons)
+	render.PlainText(w, r, "not implemented\n")
 }
 
 func (s Server) userWithdrawCtrl(w http.ResponseWriter, r *http.Request) {
-	render.Status(r, http.StatusOK)
-	render.PlainText(w, r, "pong\n")
+	// TODO: implement withdraw
+	render.Status(r, http.StatusUnavailableForLegalReasons)
+	render.PlainText(w, r, "not implemented\n")
 }
 
 func (s Server) userGetWithdrawalsCtrl(w http.ResponseWriter, r *http.Request) {
-	render.Status(r, http.StatusOK)
-	render.PlainText(w, r, "pong\n")
+	// TODO: implement withdrawals
+	render.Status(r, http.StatusUnavailableForLegalReasons)
+	render.PlainText(w, r, "not implemented\n")
 }
