@@ -219,12 +219,12 @@ func (s Server) userPostOrdersCtrl(w http.ResponseWriter, r *http.Request) {
 	}
 
 	orderResponse := models.OrderResponse{
-		ID:          orderString,
-		Username:    user.Login,
-		Status:      string(order.AccrualStatus),
-		Amount:      order.Amount,
-		UploadedAt:  order.UploadedAt,
-		ProcessedAt: time.Time{},
+		ID:         orderString,
+		Username:   user.Login,
+		Status:     string(order.AccrualStatus),
+		Amount:     order.Amount,
+		UploadedAt: order.UploadedAt,
+		// ProcessedAt: time.Time{},
 	}
 
 	log.Print("[INFO] trying to send to Accrual service")
@@ -268,9 +268,29 @@ func (s Server) userGetOrdersCtrl(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s Server) userBalanceCtrl(w http.ResponseWriter, r *http.Request) {
-	// TODO: implement balance
-	render.Status(r, http.StatusUnavailableForLegalReasons)
-	render.PlainText(w, r, "not implemented\n")
+	ctx, cancel := context.WithTimeout(r.Context(), 50*time.Second)
+	defer cancel()
+
+	reqID := middleware.GetReqID(ctx)
+	log.Printf("[INFO] reqID %s userBalanceCtrl", reqID)
+
+	user, ok := r.Context().Value(UserContextKey).(models.User)
+	if !ok {
+		render.Status(r, http.StatusUnauthorized)
+		render.PlainText(w, r, "unauthorized\n")
+		return
+	}
+
+	balance, err := s.Service.GetBalance(ctx, user.Login)
+	if err != nil {
+		log.Printf("[ERROR] reqID %s userBalanceCtrl, %v", reqID, err)
+		render.Status(r, http.StatusInternalServerError)
+		render.JSON(w, r, errors.Wrap(err, "cannot get balance"))
+		return
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, balance)
 }
 
 func (s Server) userWithdrawCtrl(w http.ResponseWriter, r *http.Request) {

@@ -42,13 +42,11 @@ var (
 )
 
 type OrderResponse struct {
-	ID       string `json:"-"`
-	Username string `json:"-"`
-	// Number      string    `json:"order"`
-	Status      string    `json:"status"`
-	Amount      int64     `json:"accrual,omitempty"`
-	UploadedAt  time.Time `json:"uploaded_at"`
-	ProcessedAt time.Time `json:"-"`
+	ID         string    `json:"number"`
+	Username   string    `json:"username"`
+	Status     string    `json:"status"`
+	Amount     int64     `json:"accrual,omitempty"`
+	UploadedAt time.Time `json:"uploaded_at"`
 }
 
 type AccrualStatus string
@@ -77,4 +75,10 @@ type AccrualResponse struct {
 	Order   string `json:"order"`
 	Status  string `json:"status"`
 	Accrual int    `json:"accrual"`
+}
+
+type BalanceResponse struct {
+	Current    int       `json:"current"`
+	Withdrawn  int       `json:"withdrawn"`
+	UploadedAt time.Time `json:"uploaded_at"`
 }

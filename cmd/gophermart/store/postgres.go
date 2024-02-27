@@ -154,3 +154,15 @@ func (p *Storage) GetOrders(ctx context.Context, uid uuid.UUID) []models.OrderRe
 	}
 	return orders
 }
+
+func (p *Storage) GetBalance(ctx context.Context, uid uuid.UUID) models.BalanceResponse {
+	var balance models.BalanceResponse
+
+	err := p.db.QueryRow(ctx, "SELECT current_balance, withdrawn FROM balance WHERE uid=$1", uid).Scan(&balance.Current, &balance.Withdrawn)
+	if err != nil {
+		log.Printf("[ERROR] cannot get balance %v", err)
+		return models.BalanceResponse{}
+	}
+
+	return balance
+}

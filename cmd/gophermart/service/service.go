@@ -240,3 +240,12 @@ func (s *Service) GetOrders(ctx context.Context, login string) ([]models.OrderRe
 	}
 	return s.storage.GetOrders(ctx, user.UID), nil
 }
+
+func (s *Service) GetBalance(ctx context.Context, login string) (models.BalanceResponse, error) {
+	user, err := s.storage.GetUserByLogin(ctx, login)
+	if err != nil {
+		log.Printf("[ERROR] user %s not found %v", user.Login, err)
+		return models.BalanceResponse{}, models.ErrUserNotFound
+	}
+	return s.storage.GetBalance(ctx, user.UID), nil
+}
