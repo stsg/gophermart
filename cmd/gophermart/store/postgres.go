@@ -50,8 +50,8 @@ func New(cfg *Config) (*Storage, error) {
 func (p *Storage) GetUserByLogin(ctx context.Context, login string) (*models.User, error) {
 	var user models.User
 
-	err := p.db.QueryRow(ctx, "SELECT uuid, login, password FROM users WHERE login=$1", login).Scan(
-		&user.UUID,
+	err := p.db.QueryRow(ctx, "SELECT uid, login, password FROM users WHERE login=$1", login).Scan(
+		&user.UID,
 		&user.Login,
 		&user.PHash,
 	)
@@ -65,11 +65,11 @@ func (p *Storage) GetUserByLogin(ctx context.Context, login string) (*models.Use
 
 }
 
-func (p *Storage) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (models.User, error) {
+func (p *Storage) GetUserByUUID(ctx context.Context, uid uuid.UUID) (models.User, error) {
 	var user models.User
 
-	err := p.db.QueryRow(ctx, "SELECT uuid, login, password FROM users WHERE uuid=$1", uuid).Scan(
-		&user.UUID,
+	err := p.db.QueryRow(ctx, "SELECT uid, login, password FROM users WHERE uid=$1", uid).Scan(
+		&user.UID,
 		&user.Login,
 		&user.PHash,
 	)
@@ -84,7 +84,7 @@ func (p *Storage) GetUserByUUID(ctx context.Context, uuid uuid.UUID) (models.Use
 }
 
 func (p *Storage) CreateUser(ctx context.Context, user *models.User) (*models.User, error) {
-	_, err := p.db.Exec(ctx, "INSERT INTO users (uuid, login, password) VALUES ($1, $2, $3)", user.UUID, user.Login, user.PHash)
+	_, err := p.db.Exec(ctx, "INSERT INTO users (uid, login, password) VALUES ($1, $2, $3)", user.UID, user.Login, user.PHash)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
@@ -100,7 +100,7 @@ func (p *Storage) CreateUser(ctx context.Context, user *models.User) (*models.Us
 func (p *Storage) SaveOrder(ctx context.Context, user *models.User, order *models.Order) (*models.Order, error) {
 	order.UploadedAt = time.Now()
 	_, err := p.db.Exec(ctx, "INSERT INTO orders (id, uid, updated_at) VALUES ($1, $2, $3)",
-		order.ID, user.UUID, order.UploadedAt)
+		order.ID, user.UID, order.UploadedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
@@ -113,20 +113,22 @@ func (p *Storage) SaveOrder(ctx context.Context, user *models.User, order *model
 	return order, nil
 }
 
-func (p *Storage) UpdateOrderStatus(ctx context.Context, orderNumber string, status models.AccrualStatus, accrual int) (*models.OrderResponse, error) {
-	var uuid uuid.UUID
+func (p *Storage) UpdateOrderStatus(ctx context.Context, orderNumber string, status models.AccrualStatus, amount int) (*models.OrderResponse, error) {
+	var uid uuid.UUID
+
 	order := models.OrderResponse{}
 	err := p.db.QueryRow(
 		ctx,
-		"UPDATE ORDERS SET STATUS=$1, ACCRUAL=$2 WHERE ID=$2 RETURNING id, uid, number, status, accrual, updated_at",
-		orderNumber, status, accrual).Scan(&order.ID, &uuid, &order.Number, &order.Status, &order.Accrual, &order.UploadedAt)
+		"UPDATE orders SET status=$2, amount=$3 WHERE id=$1 RETURNING id, uid, amount, status, updated_at",
+		orderNumber, status, amount,
+	).Scan(&order.ID, &uid, &order.Amount, &order.Status, &order.UploadedAt)
 	if err != nil {
 		log.Printf("[ERROR] cannot update order %s status %v", orderNumber, err)
 		return &order, err
 	}
 
 	// TODO: check err
-	user, _ := p.GetUserByUUID(ctx, uuid)
+	user, _ := p.GetUserByUUID(ctx, uid)
 	order.Username = user.Login
 
 	return &order, nil

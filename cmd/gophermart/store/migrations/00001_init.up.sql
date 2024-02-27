@@ -1,7 +1,7 @@
 -- +goose Up
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS users (
-    uuid uuid UNIQUE NOT NULL PRIMARY KEY default gen_random_uuid(), 
+    uid uuid UNIQUE NOT NULL PRIMARY KEY default gen_random_uuid(), 
     login text UNIQUE NOT NULL,
     password text NOT NULL,
     jwt text DEFAULT NULL,
@@ -9,28 +9,28 @@ CREATE TABLE IF NOT EXISTS users (
     deleted boolean NOT NULL default false
 );
 
-CREATE TABLE IF NOT EXISTS balances (
-uid uuid UNIQUE NOT NULL PRIMARY KEY,
-current_balance float NOT NULL DEFAULT 0,
-withdrawn float NOT NULL DEFAULT 0
-);
-
 CREATE TABLE IF NOT EXISTS orders (
     id text NOT NULL PRIMARY KEY,
     uid uuid NOT NULL,
-    accrual int DEFAULT 0,
-    status text DEFAULT 'NEW',
+    amount int DEFAULT 0,
+    status text NOT NULL DEFAULT 'NEW',
     updated_at timestamptz NOT NULL DEFAULT now(),
     deleted boolean NOT NULL default false,
-    FOREIGN KEY (uid) REFERENCES users (uuid)
+    FOREIGN KEY (uid) REFERENCES users (uid)
 );
 
 CREATE TABLE IF NOT EXISTS accrual (
     order_id text UNIQUE NOT NULL PRIMARY KEY,
     uid uuid NOT NULL,
-    amount int default 0,
-    deleted boolean NOT NULL default false,
+    amount int DEFAULT 0,
+    deleted boolean NOT NULL DEFAULT FALSE,
     FOREIGN KEY (order_id) REFERENCES orders (id)
+);
+
+CREATE TABLE IF NOT EXISTS balances (
+    uid uuid UNIQUE NOT NULL PRIMARY KEY,
+    current_balance float NOT NULL DEFAULT 0,
+    withdrawn float NOT NULL DEFAULT 0
 );
 
 INSERT INTO

@@ -136,6 +136,7 @@ func (s Server) userLoginCtrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: case insensitive login
 	// req.Login = strings.ToLower(req.Login)
 	log.Printf("[INFO] login %s userLoginCtrl", req.Login)
 
@@ -155,9 +156,10 @@ func (s Server) userLoginCtrl(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s Server) userPostOrdersCtrl(w http.ResponseWriter, r *http.Request) {
-	var number int64
+	var orderString string
+	var orderNumber int64
 
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 50*time.Second)
 	defer cancel()
 
 	reqID := middleware.GetReqID(ctx)
@@ -178,7 +180,8 @@ func (s Server) userPostOrdersCtrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	number, err = strconv.ParseInt(string(req), 10, 64)
+	orderString = string(req)
+	orderNumber, err = strconv.ParseInt(string(req), 10, 64)
 	if err != nil {
 		log.Printf("[ERROR] reqID %s userPostOrdersCtrl, %v", reqID, err)
 		render.Status(r, http.StatusBadRequest)
@@ -186,14 +189,14 @@ func (s Server) userPostOrdersCtrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !lib.LuhnValid(number) {
+	if !lib.LuhnValid(orderNumber) {
 		log.Printf("[ERROR] reqID %s userPostOrdersCtrl, %v", reqID, err)
 		render.Status(r, http.StatusUnprocessableEntity)
 		render.JSON(w, r, errors.Wrap(err, "invalid order number"))
 		return
 	}
 
-	order, err := s.Service.SaveOrder(ctx, user.Login, number)
+	order, err := s.Service.SaveOrder(ctx, user.Login, orderString)
 	if err != nil {
 		log.Printf("[ERROR] reqID %s userPostOrdersCtrl, %v", reqID, err)
 		render.Status(r, http.StatusInternalServerError)
@@ -201,7 +204,7 @@ func (s Server) userPostOrdersCtrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if order.UUID != user.UUID {
+	if order.UID != user.UID {
 		log.Printf("[ERROR] reqID %s userPostOrdersCtrl, %v", reqID, err)
 		render.Status(r, http.StatusConflict)
 		render.JSON(w, r, errors.Wrap(err, "order uploaded by another user"))
@@ -211,17 +214,16 @@ func (s Server) userPostOrdersCtrl(w http.ResponseWriter, r *http.Request) {
 	if order.AccrualStatus != models.AccrualStatusNew {
 		log.Printf("[WARN] reqID %s userPostOrdersCtrl, %v", reqID, err)
 		render.Status(r, http.StatusOK)
+		log.Print("[INFO] Status Ok")
 		render.JSON(w, r, errors.Wrap(err, "order uploaded by another user"))
 		return
 	}
 
 	orderResponse := models.OrderResponse{
-		// ID:          strconv.ParseInt(string(order.ID), 10, 64),
-		ID:          number,
+		ID:          orderString,
 		Username:    user.Login,
-		Number:      strconv.FormatInt(number, 10),
 		Status:      string(order.AccrualStatus),
-		Accrual:     order.Accrual,
+		Amount:      order.Amount,
 		UploadedAt:  order.UploadedAt,
 		ProcessedAt: time.Time{},
 	}
@@ -230,6 +232,7 @@ func (s Server) userPostOrdersCtrl(w http.ResponseWriter, r *http.Request) {
 	s.Service.ChanToAccurual <- &orderResponse
 	log.Print("[INFO] sent to Accrual service")
 	render.Status(r, http.StatusAccepted)
+	render.JSON(w, r, "accepted")
 }
 
 func (s Server) userGetOrdersCtrl(w http.ResponseWriter, r *http.Request) {

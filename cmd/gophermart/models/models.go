@@ -8,7 +8,7 @@ import (
 )
 
 type User struct {
-	UUID     uuid.UUID `json:"uuid,omitempty" db:"uuid"`
+	UID      uuid.UUID `json:"uuid,omitempty" db:"uuid"`
 	Login    string    `json:"login,omitempty" db:"login"`
 	PHash    string    `json:"p_hash,omitempty" db:"p_hash"`
 	JWTToken string    `json:"jwt_token,omitempty" db:"jwt_token"`
@@ -29,8 +29,8 @@ type UserRegisterRequest struct {
 
 type Order struct {
 	ID            string        `json:"number" db:"id"`
-	UUID          uuid.UUID     `json:"uuid" db:"uuid"`
-	Accrual       int64         `json:"accrual" db:"accrual"`
+	UID           uuid.UUID     `json:"uuid" db:"uuid"`
+	Amount        int64         `json:"accrual" db:"accrual"`
 	AccrualStatus AccrualStatus `json:"status" db:"accrual_status"`
 	UploadedAt    time.Time     `json:"uploaded_at" db:"uploaded_at"`
 }
@@ -42,11 +42,11 @@ var (
 )
 
 type OrderResponse struct {
-	ID          int64     `json:"-"`
-	Username    string    `json:"-"`
-	Number      string    `json:"order"`
+	ID       string `json:"-"`
+	Username string `json:"-"`
+	// Number      string    `json:"order"`
 	Status      string    `json:"status"`
-	Accrual     int64     `json:"accrual,omitempty"`
+	Amount      int64     `json:"accrual,omitempty"`
 	UploadedAt  time.Time `json:"uploaded_at"`
 	ProcessedAt time.Time `json:"-"`
 }
@@ -62,7 +62,7 @@ const (
 
 type Accruals struct {
 	OrderID     string    `json:"order" db:"order_id"`
-	UUID        uuid.UUID `json:"uuid" db:"uid"`
+	UID         uuid.UUID `json:"uuid" db:"uid"`
 	Amount      int64     `json:"sum" db:"amount"`
 	ProcessedAt time.Time `json:"processed_at" db:"processed_at"`
 }
