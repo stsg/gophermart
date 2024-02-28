@@ -294,9 +294,66 @@ func (s Server) userBalanceCtrl(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s Server) userWithdrawCtrl(w http.ResponseWriter, r *http.Request) {
-	// TODO: implement withdraw
-	render.Status(r, http.StatusUnavailableForLegalReasons)
-	render.PlainText(w, r, "not implemented\n")
+	var req models.WithdrawRequest
+	// var res models.WithdrawResponse
+
+	ctx, cancel := context.WithTimeout(r.Context(), 50*time.Second)
+	defer cancel()
+
+	reqID := middleware.GetReqID(ctx)
+	log.Printf("[INFO] reqID %s userWithdrawCtrl", reqID)
+
+	user, ok := r.Context().Value(UserContextKey).(models.User)
+	if !ok {
+		render.Status(r, http.StatusUnauthorized)
+		render.PlainText(w, r, "unauthorized\n")
+		return
+	}
+
+	err := render.DecodeJSON(r.Body, &req)
+	if err != nil {
+		log.Printf("[WARN] reqID %s userWithdrawCtrl, %v", reqID, err)
+		render.Status(r, http.StatusBadRequest)
+		render.JSON(w, r, errors.Wrap(err, "failed to parse request body"))
+		return
+	}
+
+	orderNumber, err := strconv.ParseInt(req.Number, 10, 64)
+	if err != nil {
+		log.Printf("[WARN] reqID %s userWithdrawCtrl, %v", reqID, err)
+		render.Status(r, http.StatusBadRequest)
+		render.JSON(w, r, errors.Wrap(err, "cannot get witdraw number"))
+		return
+	}
+
+	if !lib.LuhnValid(orderNumber) {
+		log.Printf("[ERROR] reqID %s userWithdrawCtrl, %v", reqID, err)
+		render.Status(r, http.StatusUnprocessableEntity)
+		render.JSON(w, r, errors.Wrap(err, "invalid order number"))
+		return
+	}
+
+	// TODO: check balance
+	// order, err = s.Service.SaveWithdraw(ctx, user.Login, req.Number, req.Accrual)
+	// _, err = s.Service.SaveWithdraw(ctx, user.Login, req.Number, req.Accrual)
+	s.Service.SaveWithdraw(ctx, user.Login, req.Number, req.Accrual)
+
+	// TODO: check pgerrcode.UniqueViolation
+	// render.Status(r, http.StatusUnprocessableEntity)
+	// render.JSON(w, r, errors.Wrap(err, "duplicate order number"))
+
+	// TODO: check not enough money
+	// render.Status(r, http.StatusPaymentRequired)
+	// render.JSON(w, r, errors.Wrap(err, "not enough money in the account"))
+
+	res := models.WithdrawResponse{
+		Number:      req.Number,
+		Accrual:     int(req.Accrual),
+		ProcessedAt: time.Now(),
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, res)
 }
 
 func (s Server) userGetWithdrawalsCtrl(w http.ResponseWriter, r *http.Request) {

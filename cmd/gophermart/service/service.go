@@ -249,3 +249,25 @@ func (s *Service) GetBalance(ctx context.Context, login string) (models.BalanceR
 	}
 	return s.storage.GetBalance(ctx, user.UID), nil
 }
+
+func (s *Service) SaveWithdraw(ctx context.Context, login string, orderNum string, accrual int64) (order *models.Order, err error) {
+	user, err := s.storage.GetUserByLogin(ctx, login)
+	if err != nil {
+		log.Printf("[ERROR] user %s not found %v", user.Login, err)
+		return nil, models.ErrUserNotFound
+	}
+
+	order, err = s.storage.SaveWithdraw(ctx, user, &models.Order{
+		ID:            orderNum,
+		UID:           user.UID,
+		Amount:        accrual,
+		AccrualStatus: models.AccrualStatusNew,
+		UploadedAt:    time.Now(),
+	})
+	if err != nil {
+		log.Printf("[ERROR] cannot save withdraw %s %v", user.Login, err)
+		return nil, err
+	}
+
+	return order, nil
+}

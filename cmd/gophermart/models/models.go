@@ -77,8 +77,26 @@ type AccrualResponse struct {
 	Accrual int    `json:"accrual"`
 }
 
+type Balance struct {
+	UID       uuid.UUID `json:"uuid" db:"uid"`
+	Current   int       `json:"current" db:"current_balance"`
+	Withdrawn int       `json:"withdrawn" db:"withdrawn"`
+	// UploadedAt time.Time `json:"uploaded_at" db:"uploaded_at"`
+}
+
 type BalanceResponse struct {
 	Current    int       `json:"current"`
 	Withdrawn  int       `json:"withdrawn"`
 	UploadedAt time.Time `json:"uploaded_at"`
+}
+
+type WithdrawRequest struct {
+	Number  string `json:"order"`
+	Accrual int64  `json:"sum"`
+}
+
+type WithdrawResponse struct {
+	Number      string    `json:"order"`
+	Accrual     int       `json:"sum,omitempty"`
+	ProcessedAt time.Time `json:"processed_at"`
 }

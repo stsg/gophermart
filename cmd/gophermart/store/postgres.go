@@ -166,3 +166,46 @@ func (p *Storage) GetBalance(ctx context.Context, uid uuid.UUID) models.BalanceR
 
 	return balance
 }
+
+func (p *Storage) SaveWithdraw(ctx context.Context, user *models.User, order *models.Order) (*models.Order, error) {
+	balance := models.Balance{}
+	//order := models.Order{}
+
+	tx, err := p.db.Begin(ctx)
+	if err != nil {
+		log.Printf("[ERROR] cannot begin tx %v", err)
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	err = tx.QueryRow(
+		ctx,
+		"UPDATE balance SET current=current_balance-$1, withdrawn=withdrawn+$1 WHERE current_balance>=$1 AND uid=$2 RETURNING uid, current_balance, withdrawn",
+		order.Amount, user.UID,
+	).Scan(&balance.UID, &balance.Current, &balance.Withdrawn)
+	if err != nil {
+		log.Printf("[ERROR] cannot update balance for %s status %v", order.ID, err)
+		return order, err
+	}
+
+	_, err = tx.Exec(
+		ctx,
+		"INSERT INTO orders (id, uid, amount, status) VALUES ($1, $2, $3, $4)",
+		order.ID, user.UID, -order.Amount, models.AccrualStatusProcessed,
+	)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			log.Printf("[ERROR] user %s already exists %v", user.Login, err)
+			return nil, models.ErrOrderExists
+		}
+		log.Printf("[ERROR] cannot save order %s %v", user.Login, err)
+		return nil, err
+	}
+	err = tx.Commit(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return order, nil
+}
