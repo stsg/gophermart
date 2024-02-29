@@ -51,6 +51,7 @@ func main() {
 	srvc := service.New(storage, opts.AccAddr)
 	go srvc.SendToAccrual(context.Background())
 	go srvc.RecieveFromAccrual(context.Background())
+	go srvc.ProcessOrders(context.Background())
 
 	srv := server.Server{
 		RunAddr: opts.RunAddr,

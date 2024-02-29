@@ -29,4 +29,7 @@ tidy:
 run:
 	go run cmd/gophermart/main.go -d "host=localhost port=5432 user=postgres dbname=postgres password=postgres sslmode=disable"
 
-.PHONY: all build test clean tidy run
+accrual:
+	cmd/accrual/accrual_linux_amd64 -a :8081 -d "host=localhost port=5432 user=postgres dbname=postgres password=postgres sslmode=disable"
+
+.PHONY: all build test clean tidy run accrual

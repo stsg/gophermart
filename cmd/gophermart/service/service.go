@@ -1,15 +1,7 @@
-// service, that implements business logic of gophermart
-
 package service
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
-	"net/url"
 	"time"
 
 	log "github.com/go-pkgz/lgr"
@@ -22,15 +14,6 @@ import (
 )
 
 // ---------------------------------8<-----------------------------------
-// type Service interface {
-// 	GetUserByLogin(ctx context.Context, login string) (*models.User, error)
-// 	Login(ctx context.Context, login, password string) (string, error)
-// 	PostOrders(ctx context.Context, login string, orderNum int64) error
-// 	GetOrders(ctx context.Context, login string) error
-// 	GetBalance(ctx context.Context, login string) (int64, error)
-// 	Withdraw(ctx context.Context, login string) error
-// 	GetWithdrawals(ctx context.Context, login string) error
-// }
 // --------------------------------->8-----------------------------------
 
 type Service struct {
@@ -49,85 +32,6 @@ func New(storage *postgres.Storage, accrualAddress string) *Service {
 		ChanToAccurual:   toAccurual,
 		ChanFromAccurual: fromAccurual,
 		accrualAddress:   accrualAddress,
-	}
-}
-
-func (s *Service) SendToAccrual(ctx context.Context) {
-	log.Printf("[INFO] SendToAccrual")
-	for {
-		log.Print("[INFO] waiting for ChanToAccurual")
-		order := <-s.ChanToAccurual
-		log.Print("[INFO] received from ChanToAccurual")
-
-		url, err := url.Parse(s.accrualAddress + "/api/orders")
-		if err != nil {
-			log.Printf("[ERROR] accrualAddress invalid %v", err)
-		}
-
-		body := fmt.Sprintf(`{"order": "%s"}`, order.ID)
-		jsonBody := []byte(body)
-		req := bytes.NewReader(jsonBody)
-		resp, err := http.Post(url.String(), "application/json", req)
-		if err != nil {
-			s.ChanToAccurual <- order
-			log.Printf("[ERROR] cant get accrual %v", err)
-		}
-
-		if resp.StatusCode == http.StatusAccepted || resp.StatusCode == http.StatusConflict {
-			order, _ = s.storage.UpdateOrderStatus(ctx, order.ID, models.AccrualStatusProcessed, 0)
-			log.Print("[INFO] trying sending to ChanFromAccurual")
-			s.ChanFromAccurual <- order
-			log.Print("[INFO] sent to ChanFromAccurual")
-		} else {
-			log.Print("[INFO] trying sending ChanToAccurual")
-			s.ChanToAccurual <- order
-			log.Print("[INFO] sent to ChanToAccurual")
-
-		}
-		err = resp.Body.Close()
-		if err != nil {
-			log.Printf("[ERROR] cant close request body %v", err)
-		}
-	}
-}
-
-func (s *Service) RecieveFromAccrual(ctx context.Context) {
-	log.Printf("[INFO] RecieveFromAccrual")
-	for {
-		log.Print("[INFO] waiting for ChanFromAccurual")
-		order := <-s.ChanToAccurual
-		log.Print("[INFO] received from ChanFromAccurual")
-		url, err := url.Parse(fmt.Sprintf(s.accrualAddress+"/api/orders/%s", order.ID))
-		if err != nil {
-			log.Printf("[ERROR] accrualAddress invalid %v", err)
-		}
-
-		resp, err := http.Get(url.String())
-		if err != nil {
-			log.Printf("[ERROR] cant get accrual %v", err)
-		}
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Printf("[ERROR] cannot get body %v", err)
-		}
-
-		accrual := &models.AccrualResponse{}
-		err = json.Unmarshal(body, accrual)
-		if err != nil {
-			log.Printf("[ERROR] cannot unmarshal body %v", err)
-		}
-
-		if resp.StatusCode == http.StatusOK && accrual.Status == string(models.AccrualStatusProcessed) {
-			_, err := s.storage.UpdateOrderStatus(ctx, order.ID, models.AccrualStatusProcessed, accrual.Accrual)
-			if err != nil {
-				return
-			}
-		}
-		err = resp.Body.Close()
-		if err != nil {
-			log.Printf("[ERROR] cant close request body %v", err)
-		}
 	}
 }
 
@@ -250,24 +154,34 @@ func (s *Service) GetBalance(ctx context.Context, login string) (models.BalanceR
 	return s.storage.GetBalance(ctx, user.UID), nil
 }
 
-func (s *Service) SaveWithdraw(ctx context.Context, login string, orderNum string, accrual int64) (order *models.Order, err error) {
+func (s *Service) SaveWithdraw(ctx context.Context, login string, orderNum string, amount int64) (err error) {
+	user, err := s.storage.GetUserByLogin(ctx, login)
+	if err != nil {
+		log.Printf("[ERROR] user %s not found %v", user.Login, err)
+		return models.ErrUserNotFound
+	}
+
+	err = s.storage.SaveWithdraw(ctx, user, &models.Order{
+		ID:            orderNum,
+		UID:           user.UID,
+		Amount:        amount,
+		AccrualStatus: models.AccrualStatusNew,
+		UploadedAt:    time.Now(),
+	})
+	if err != nil {
+		log.Printf("[ERROR] cannot save withdraw %s %v", user.Login, err)
+		return err
+	}
+
+	return err
+}
+
+func (s *Service) GetWithdrawals(ctx context.Context, login string) ([]models.WithdrawalsResponse, error) {
 	user, err := s.storage.GetUserByLogin(ctx, login)
 	if err != nil {
 		log.Printf("[ERROR] user %s not found %v", user.Login, err)
 		return nil, models.ErrUserNotFound
 	}
 
-	order, err = s.storage.SaveWithdraw(ctx, user, &models.Order{
-		ID:            orderNum,
-		UID:           user.UID,
-		Amount:        accrual,
-		AccrualStatus: models.AccrualStatusNew,
-		UploadedAt:    time.Now(),
-	})
-	if err != nil {
-		log.Printf("[ERROR] cannot save withdraw %s %v", user.Login, err)
-		return nil, err
-	}
-
-	return order, nil
+	return s.storage.GetWithdrawals(ctx, user.UID)
 }
