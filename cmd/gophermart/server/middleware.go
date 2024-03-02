@@ -14,7 +14,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	log "github.com/go-pkgz/lgr"
 
-	"github.com/stsg/gophermart/cmd/gophermart/models"
 	"github.com/stsg/gophermart/cmd/gophermart/service"
 )
 
@@ -102,7 +101,7 @@ func Authorize(s *service.Service) func(http.Handler) http.Handler {
 	f := func(h http.Handler) http.Handler {
 
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			var user models.User
+			//var user models.User
 			ctx, cancel := context.WithTimeout(r.Context(), 1*time.Second)
 			defer cancel()
 

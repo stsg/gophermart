@@ -57,7 +57,7 @@ func (s *Service) RecieveFromAccrual(ctx context.Context) {
 	log.Printf("[INFO] RecieveFromAccrual")
 	for {
 		log.Print("[INFO] waiting for ChanFromAccurual")
-		order := <-s.ChanToAccurual
+		order := <-s.ChanFromAccurual
 		log.Print("[INFO] received from ChanFromAccurual")
 		url, err := url.Parse(fmt.Sprintf(s.accrualAddress+"/api/orders/%s", order.ID))
 		if err != nil {

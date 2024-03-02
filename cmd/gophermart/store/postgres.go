@@ -180,7 +180,7 @@ func (p *Storage) SaveWithdraw(ctx context.Context, user *models.User, order *mo
 
 	err = tx.QueryRow(
 		ctx,
-		"UPDATE balance SET current=current_balance-$1, withdrawn=withdrawn+$1 WHERE current_balance>=$1 AND uid=$2 RETURNING uid, current_balance, withdrawn",
+		"UPDATE balances SET current_balance=current_balance-$1, withdrawn=withdrawn+$1 WHERE current_balance>=$1 AND uid=$2 RETURNING uid, current_balance, withdrawn",
 		order.Amount, user.UID,
 	).Scan(&balance.UID, &balance.Current, &balance.Withdrawn)
 	if err != nil {
@@ -234,29 +234,6 @@ func (p *Storage) GetWithdrawals(ctx context.Context, uid uuid.UUID) ([]models.W
 	}
 	return orders, err
 }
-
-// func (p *Storage) GetProcessingOrders(ctx context.Context) ([]models.OrderResponse, error) {
-// 	var orders []models.OrderResponse
-// 	rows, err := p.db.Query(
-// 		ctx,
-// 		"SELECT id, uid, amount, status, updated_at FROM orders WHERE status=$1 and amount > 0 ORDER BY updated_at", models.AccrualStatusProcessing,
-// 	)
-// 	if err != nil {
-// 		log.Printf("[ERROR] cannot get orders %v", err)
-// 		return orders, err
-// 	}
-// 	defer rows.Close()
-// 	for rows.Next() {
-// 		order := models.OrderResponse{}
-// 		err := rows.Scan(&order.ID, &order.Amount, &order.Status, &order.UploadedAt)
-// 		if err != nil {
-// 			log.Printf("[ERROR] cannot get order %v", err)
-// 			continue
-// 		}
-// 		orders = append(orders, order)
-// 	}
-// 	return orders, err
-// }
 
 func (p *Storage) GetOrdersByStatus(ctx context.Context, status models.AccrualStatus) ([]models.OrderResponse, error) {
 	var orders []models.OrderResponse

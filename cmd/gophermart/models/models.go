@@ -70,8 +70,8 @@ type BalanceResponse struct {
 }
 
 type WithdrawRequest struct {
-	Number  string `json:"order"`
-	Accrual int64  `json:"sum"`
+	Number  string  `json:"order"`
+	Accrual float32 `json:"sum"`
 }
 
 type WithdrawResponse struct {

@@ -10,7 +10,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	log "github.com/go-pkgz/lgr"
-	"github.com/jackc/pgerrcode"
 	"github.com/pkg/errors"
 
 	"github.com/stsg/gophermart/cmd/gophermart/lib"
@@ -229,7 +228,7 @@ func (s Server) userWithdrawCtrl(w http.ResponseWriter, r *http.Request) {
 	var req models.WithdrawRequest
 	// var res models.WithdrawResponse
 
-	ctx, cancel := context.WithTimeout(r.Context(), 50*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 300*time.Second)
 	defer cancel()
 
 	reqID := middleware.GetReqID(ctx)
@@ -265,16 +264,18 @@ func (s Server) userWithdrawCtrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.Service.SaveWithdraw(ctx, user.Login, req.Number, req.Accrual)
+	err = s.Service.SaveWithdraw(ctx, user.Login, req.Number, int64(req.Accrual*100))
 
-	if errors.As(err, pgerrcode.UniqueViolation) {
+	// if errors.As(err, pgerrcode.UniqueViolation) {
+	if err == models.ErrOrderExists {
 		log.Printf("[ERROR] reqID %s userWithdrawCtrl, %v", reqID, err)
 		render.Status(r, http.StatusUnprocessableEntity)
 		render.JSON(w, r, errors.Wrap(err, "duplicate order number"))
 		return
 	}
 
-	if errors.As(err, models.ErrBalanceWrong) {
+	// if errors.Is(err, models.ErrBalanceWrong) {
+	if err == models.ErrBalanceWrong {
 		log.Printf("[ERROR] reqID %s userWithdrawCtrl, %v", reqID, err)
 		render.Status(r, http.StatusPaymentRequired)
 		render.JSON(w, r, errors.Wrap(err, "not enough money in the account"))
