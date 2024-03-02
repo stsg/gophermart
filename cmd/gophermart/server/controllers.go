@@ -303,14 +303,6 @@ func (s Server) userGetWithdrawalsCtrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// err := render.DecodeJSON(r.Body, &req)
-	// if err != nil {
-	// 	log.Printf("[WARN] reqID %s userWithdrawalsCtrl, %v", reqID, err)
-	// 	render.Status(r, http.StatusBadRequest)
-	// 	render.JSON(w, r, errors.Wrap(err, "failed to parse request body"))
-	// 	return
-	// }
-
 	withdrawals, err := s.Service.GetWithdrawals(ctx, user.Login)
 	if err != nil {
 		log.Printf("[ERROR] reqID %s userWithdrawalsCtrl, %v", reqID, err)
