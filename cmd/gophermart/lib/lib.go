@@ -3,6 +3,7 @@ package lib
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -91,4 +92,9 @@ func IsTableExist(p *pgxpool.Pool, table string) bool {
 	err := p.QueryRow(context.Background(), "SELECT 1 FROM information_schema.tables WHERE table_name = $1", table).Scan(&n)
 
 	return err == nil
+}
+
+func RoundFloat(val float64, precision uint) float64 {
+	ratio := math.Pow(10, float64(precision))
+	return math.Round(val*ratio) / ratio
 }
