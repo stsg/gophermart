@@ -81,7 +81,7 @@ func (s *Service) RecieveFromAccrual(ctx context.Context) {
 		}
 
 		if resp.StatusCode == http.StatusOK && accrual.Status == string(models.AccrualStatusProcessed) {
-			_, err := s.storage.UpdateOrderStatus(ctx, order.ID, models.AccrualStatusProcessed, accrual.Accrual)
+			_, err := s.storage.UpdateOrderStatus(ctx, order.ID, models.AccrualStatusProcessed, int64(accrual.Accrual*100))
 			if err != nil {
 				return
 			}

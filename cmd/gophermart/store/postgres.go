@@ -114,7 +114,7 @@ func (p *Storage) SaveOrder(ctx context.Context, user *models.User, order *model
 	return order, nil
 }
 
-func (p *Storage) UpdateOrderStatus(ctx context.Context, orderNumber string, status models.AccrualStatus, amount int) (*models.OrderResponse, error) {
+func (p *Storage) UpdateOrderStatus(ctx context.Context, orderNumber string, status models.AccrualStatus, amount int64) (*models.OrderResponse, error) {
 	var uid uuid.UUID
 
 	order := models.OrderResponse{}
@@ -158,7 +158,7 @@ func (p *Storage) GetOrders(ctx context.Context, uid uuid.UUID) []models.OrderRe
 func (p *Storage) GetBalance(ctx context.Context, uid uuid.UUID) models.BalanceResponse {
 	var balance models.BalanceResponse
 
-	err := p.db.QueryRow(ctx, "SELECT current_balance, withdrawn FROM balance WHERE uid=$1", uid).Scan(&balance.Current, &balance.Withdrawn)
+	err := p.db.QueryRow(ctx, "SELECT current_balance, withdrawn FROM balances WHERE uid=$1", uid).Scan(&balance.Current, &balance.Withdrawn)
 	if err != nil {
 		log.Printf("[ERROR] cannot get balance %v", err)
 		return models.BalanceResponse{}
