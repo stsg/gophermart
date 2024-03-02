@@ -39,7 +39,7 @@ type OrderResponse struct {
 	ID         string    `json:"number"`
 	Username   string    `json:"username"`
 	Status     string    `json:"status"`
-	Amount     int64     `json:"accrual,omitempty"`
+	Amount     float32   `json:"accrual,omitempty"`
 	UploadedAt time.Time `json:"uploaded_at"`
 }
 

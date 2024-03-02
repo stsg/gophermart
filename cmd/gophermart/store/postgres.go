@@ -144,12 +144,14 @@ func (p *Storage) GetOrders(ctx context.Context, uid uuid.UUID) []models.OrderRe
 	}
 	defer rows.Close()
 	for rows.Next() {
+		var amount int64
 		order := models.OrderResponse{}
-		err := rows.Scan(&order.ID, &uid, &order.Amount, &order.Status, &order.UploadedAt)
+		err := rows.Scan(&order.ID, &uid, &amount, &order.Status, &order.UploadedAt)
 		if err != nil {
 			log.Printf("[ERROR] cannot get order %v", err)
 			continue
 		}
+		order.Amount = float32(amount / 100)
 		orders = append(orders, order)
 	}
 	return orders

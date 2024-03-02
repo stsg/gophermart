@@ -153,7 +153,7 @@ func (s Server) userPostOrdersCtrl(w http.ResponseWriter, r *http.Request) {
 		ID:         orderString,
 		Username:   user.Login,
 		Status:     string(order.AccrualStatus),
-		Amount:     order.Amount,
+		Amount:     float32(order.Amount / 100),
 		UploadedAt: order.UploadedAt,
 		// ProcessedAt: time.Time{},
 	}
@@ -266,7 +266,6 @@ func (s Server) userWithdrawCtrl(w http.ResponseWriter, r *http.Request) {
 
 	err = s.Service.SaveWithdraw(ctx, user.Login, req.Number, int64(req.Accrual*100))
 
-	// if errors.As(err, pgerrcode.UniqueViolation) {
 	if err == models.ErrOrderExists {
 		log.Printf("[ERROR] reqID %s userWithdrawCtrl, %v", reqID, err)
 		render.Status(r, http.StatusUnprocessableEntity)
@@ -274,7 +273,6 @@ func (s Server) userWithdrawCtrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// if errors.Is(err, models.ErrBalanceWrong) {
 	if err == models.ErrBalanceWrong {
 		log.Printf("[ERROR] reqID %s userWithdrawCtrl, %v", reqID, err)
 		render.Status(r, http.StatusPaymentRequired)
