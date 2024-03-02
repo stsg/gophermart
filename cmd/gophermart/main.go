@@ -71,5 +71,6 @@ func setupLog(dbg bool) {
 		log.Setup(log.Debug, log.CallerFile, log.Msec, log.LevelBraces)
 		return
 	}
-	log.Setup(log.Msec, log.LevelBraces)
+	// log.Setup(log.Msec, log.LevelBraces)
+	log.Setup(log.Debug, log.CallerFile, log.Msec, log.LevelBraces)
 }
