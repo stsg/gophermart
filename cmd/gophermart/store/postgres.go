@@ -158,17 +158,17 @@ func (p *Storage) GetOrders(ctx context.Context, uid uuid.UUID) []models.OrderRe
 }
 
 func (p *Storage) GetBalance(ctx context.Context, uid uuid.UUID) models.BalanceResponse {
-	var current_balance int64
+	var current int64
 	var withdrawn int64
 	var balance models.BalanceResponse
 
-	err := p.db.QueryRow(ctx, "SELECT current_balance, withdrawn FROM balances WHERE uid=$1", uid).Scan(&current_balance, &withdrawn)
+	err := p.db.QueryRow(ctx, "SELECT current_balance, withdrawn FROM balances WHERE uid=$1", uid).Scan(&current, &withdrawn)
 	if err != nil {
 		log.Printf("[ERROR] cannot get balance %v", err)
 		return models.BalanceResponse{}
 	}
 
-	balance.Current = lib.RoundFloat(float64(current_balance)/100.00, 2)
+	balance.Current = lib.RoundFloat(float64(current)/100.00, 2)
 	balance.Withdrawn = lib.RoundFloat(float64(withdrawn)/100.00, 2)
 
 	return balance
@@ -231,12 +231,14 @@ func (p *Storage) GetWithdrawals(ctx context.Context, uid uuid.UUID) ([]models.W
 	}
 	defer rows.Close()
 	for rows.Next() {
+		var amount int64
 		order := models.WithdrawalsResponse{}
-		err := rows.Scan(&order.Number, &order.Accrual, &order.ProcessedAt)
+		err := rows.Scan(&order.Number, &amount, &order.ProcessedAt)
 		if err != nil {
 			log.Printf("[ERROR] cannot get order %v", err)
 			continue
 		}
+		order.Accrual = lib.RoundFloat(float64(amount)/100.00, 2)
 		orders = append(orders, order)
 	}
 	return orders, err

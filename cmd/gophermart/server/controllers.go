@@ -281,7 +281,7 @@ func (s Server) userWithdrawCtrl(w http.ResponseWriter, r *http.Request) {
 
 	res := models.WithdrawResponse{
 		Number:      req.Number,
-		Accrual:     int(req.Accrual),
+		Accrual:     req.Accrual,
 		ProcessedAt: time.Now(),
 	}
 

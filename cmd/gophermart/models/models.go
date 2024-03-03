@@ -76,12 +76,12 @@ type WithdrawRequest struct {
 
 type WithdrawResponse struct {
 	Number      string    `json:"order"`
-	Accrual     int       `json:"sum,omitempty"`
+	Accrual     float64   `json:"sum,omitempty"`
 	ProcessedAt time.Time `json:"processed_at"`
 }
 
 type WithdrawalsResponse struct {
 	Number      string    `json:"order"`
-	Accrual     int       `json:"sum,omitempty"`
+	Accrual     float64   `json:"sum,omitempty"`
 	ProcessedAt time.Time `json:"processed_at"`
 }
