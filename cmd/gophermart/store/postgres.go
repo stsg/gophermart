@@ -100,8 +100,8 @@ func (p *Storage) CreateUser(ctx context.Context, user *models.User) (*models.Us
 
 func (p *Storage) SaveOrder(ctx context.Context, user models.User, order models.Order) (models.Order, error) {
 	order.UploadedAt = time.Now()
-	_, err := p.db.Exec(ctx, "INSERT INTO orders (id, uid, updated_at) VALUES ($1, $2, $3)",
-		order.ID, user.UID, order.UploadedAt)
+	err := p.db.QueryRow(ctx, "INSERT INTO orders (id, uid, status) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET id=EXCLUDED.id RETURNING *",
+		order.ID, user.UID, models.AccrualStatusNew).Scan(&order.ID, &user.UID, &order.AccrualStatus, &order.UploadedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
@@ -138,7 +138,7 @@ func (p *Storage) UpdateOrderStatus(ctx context.Context, orderNumber string, sta
 
 	_, err = tx.Exec(
 		ctx,
-		"INSERT INTO balances (uid, current_balance, withdrawn) VALUES ($1, $2, $3) ON CONFLICT (uid) DO UPDATE SET current_balance=current_balance+$2",
+		"INSERT INTO balances (uid, current_balance, withdrawn) VALUES ($1, $2, $3) ON CONFLICT (uid) DO UPDATE SET current_balance = balances.current_balance + $2",
 		uid, amount, 0,
 	)
 	if err != nil {
