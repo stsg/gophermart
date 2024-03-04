@@ -100,7 +100,7 @@ func (p *Storage) CreateUser(ctx context.Context, user *models.User) (*models.Us
 
 func (p *Storage) SaveOrder(ctx context.Context, user models.User, order models.Order) (models.Order, error) {
 	order.UploadedAt = time.Now()
-	err := p.db.QueryRow(ctx, "INSERT INTO orders (id, uid, status) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET id=EXCLUDED.id RETURNING id, uid, status, uploaded_at",
+	err := p.db.QueryRow(ctx, "INSERT INTO orders (id, uid, status) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET id=EXCLUDED.id RETURNING id, uid, status, updated_at",
 		order.ID, user.UID, models.AccrualStatusNew).Scan(&order.ID, &user.UID, &order.AccrualStatus, &order.UploadedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
