@@ -18,14 +18,14 @@ import (
 
 type Service struct {
 	storage          *postgres.Storage
-	ChanToAccurual   chan *models.OrderResponse
-	ChanFromAccurual chan *models.OrderResponse
+	ChanToAccurual   chan models.OrderResponse
+	ChanFromAccurual chan models.OrderResponse
 	accrualAddress   string
 }
 
 func New(storage *postgres.Storage, accrualAddress string) *Service {
-	toAccurual := make(chan *models.OrderResponse, 100)
-	fromAccurual := make(chan *models.OrderResponse, 100)
+	toAccurual := make(chan models.OrderResponse, 100)
+	fromAccurual := make(chan models.OrderResponse, 100)
 
 	return &Service{
 		storage:          storage,
@@ -35,13 +35,13 @@ func New(storage *postgres.Storage, accrualAddress string) *Service {
 	}
 }
 
-func (s *Service) GetUserByLogin(ctx context.Context, login string) (*models.User, error) {
+func (s *Service) GetUserByLogin(ctx context.Context, login string) (models.User, error) {
 
 	user, err := s.storage.GetUserByLogin(ctx, login)
 
 	if err != nil {
 		log.Printf("[ERROR] user %s not found %v", user.Login, err)
-		return nil, models.ErrUserNotFound
+		return models.User{}, models.ErrUserNotFound
 	}
 
 	return user, nil
@@ -114,14 +114,14 @@ func (s *Service) Register(ctx context.Context, login, password string) (string,
 	return jwtString, nil
 }
 
-func (s *Service) SaveOrder(ctx context.Context, login string, orderNum string) (order *models.Order, err error) {
+func (s *Service) SaveOrder(ctx context.Context, login string, orderNum string) (order models.Order, err error) {
 	user, err := s.storage.GetUserByLogin(ctx, login)
 	if err != nil {
 		log.Printf("[ERROR] user %s not found %v", user.Login, err)
-		return nil, models.ErrUserNotFound
+		return models.Order{}, models.ErrUserNotFound
 	}
 
-	order, err = s.storage.SaveOrder(ctx, user, &models.Order{
+	order, err = s.storage.SaveOrder(ctx, user, models.Order{
 		ID:            orderNum,
 		UID:           user.UID,
 		Amount:        0,
@@ -130,7 +130,7 @@ func (s *Service) SaveOrder(ctx context.Context, login string, orderNum string) 
 	})
 	if err != nil {
 		log.Printf("[ERROR] cannot save order %s %v", user.Login, err)
-		return nil, err
+		return models.Order{}, err
 	}
 
 	return order, nil
@@ -161,7 +161,7 @@ func (s *Service) SaveWithdraw(ctx context.Context, login string, orderNum strin
 		return models.ErrUserNotFound
 	}
 
-	err = s.storage.SaveWithdraw(ctx, user, &models.Order{
+	err = s.storage.SaveWithdraw(ctx, user, models.Order{
 		ID:            orderNum,
 		UID:           user.UID,
 		Amount:        amount,

@@ -21,6 +21,7 @@ func (s *Service) SendToAccrual(ctx context.Context) {
 		order := <-s.ChanToAccurual
 		log.Print("[INFO] received from ChanToAccurual")
 
+		// url, err := url.Parse("http://" + s.accrualAddress + "/api/orders")
 		url, err := url.Parse(s.accrualAddress + "/api/orders")
 		if err != nil {
 			log.Printf("[ERROR] accrualAddress invalid %v", err)
@@ -36,7 +37,7 @@ func (s *Service) SendToAccrual(ctx context.Context) {
 		}
 
 		if resp.StatusCode == http.StatusAccepted || resp.StatusCode == http.StatusConflict {
-			order, _ = s.storage.UpdateOrderStatus(ctx, order.ID, models.AccrualStatusProcessed, 0)
+			order, _ = s.storage.UpdateOrderStatus(ctx, order.ID, models.AccrualStatusProcessing, 0)
 			log.Print("[INFO] trying sending to ChanFromAccurual")
 			s.ChanFromAccurual <- order
 			log.Print("[INFO] sent to ChanFromAccurual")
@@ -80,8 +81,8 @@ func (s *Service) RecieveFromAccrual(ctx context.Context) {
 			log.Printf("[ERROR] cannot unmarshal body %v", err)
 		}
 
-		if resp.StatusCode == http.StatusOK && accrual.Status == string(models.AccrualStatusProcessed) {
-			_, err := s.storage.UpdateOrderStatus(ctx, order.ID, models.AccrualStatusProcessed, int64(accrual.Accrual*100))
+		if resp.StatusCode == http.StatusOK && accrual.Status == models.AccrualStatusProcessed {
+			_, err := s.storage.UpdateOrderStatus(ctx, order.ID, models.AccrualStatusProcessed, int64(accrual.Accrual*100.00))
 			if err != nil {
 				return
 			}
@@ -107,10 +108,10 @@ func (s *Service) ProcessOrders(ctx context.Context) {
 	}
 
 	for _, order := range newOrders {
-		s.ChanToAccurual <- &order
+		s.ChanToAccurual <- order
 	}
 
 	for _, order := range processingOrders {
-		s.ChanFromAccurual <- &order
+		s.ChanFromAccurual <- order
 	}
 }

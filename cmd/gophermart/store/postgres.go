@@ -48,7 +48,7 @@ func New(cfg *Config) (*Storage, error) {
 	return &Storage{cfg: cfg, db: pool}, nil
 }
 
-func (p *Storage) GetUserByLogin(ctx context.Context, login string) (*models.User, error) {
+func (p *Storage) GetUserByLogin(ctx context.Context, login string) (models.User, error) {
 	var user models.User
 
 	err := p.db.QueryRow(ctx, "SELECT uid, login, password FROM users WHERE login=$1", login).Scan(
@@ -58,11 +58,11 @@ func (p *Storage) GetUserByLogin(ctx context.Context, login string) (*models.Use
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, ErrNoExists
+			return models.User{}, ErrNoExists
 		}
-		return nil, err
+		return models.User{}, err
 	}
-	return &user, nil
+	return user, nil
 
 }
 
@@ -98,41 +98,55 @@ func (p *Storage) CreateUser(ctx context.Context, user *models.User) (*models.Us
 	return user, nil
 }
 
-func (p *Storage) SaveOrder(ctx context.Context, user *models.User, order *models.Order) (*models.Order, error) {
+func (p *Storage) SaveOrder(ctx context.Context, user models.User, order models.Order) (models.Order, error) {
 	order.UploadedAt = time.Now()
 	_, err := p.db.Exec(ctx, "INSERT INTO orders (id, uid, updated_at) VALUES ($1, $2, $3)",
 		order.ID, user.UID, order.UploadedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-			log.Printf("[ERROR] user %s already exists %v", user.Login, err)
-			return nil, models.ErrOrderExists
+			log.Printf("[ERROR] order %s already exist for user %s: %v", order.ID, user.Login, err)
+			return models.Order{}, models.ErrOrderExists
 		}
 		log.Printf("[ERROR] cannot save order %s %v", user.Login, err)
-		return nil, err
+		return models.Order{}, err
 	}
 	return order, nil
 }
 
-func (p *Storage) UpdateOrderStatus(ctx context.Context, orderNumber string, status models.AccrualStatus, amount int64) (*models.OrderResponse, error) {
+func (p *Storage) UpdateOrderStatus(ctx context.Context, orderNumber string, status models.AccrualStatus, amount int64) (models.OrderResponse, error) {
 	var uid uuid.UUID
 
 	order := models.OrderResponse{}
-	err := p.db.QueryRow(
+
+	tx, err := p.db.Begin(ctx)
+	if err != nil {
+		log.Printf("[ERROR] cannot begin tx %v", err)
+		return order, err
+	}
+	defer tx.Rollback(ctx)
+
+	err = tx.QueryRow(
 		ctx,
 		"UPDATE orders SET status=$2, amount=$3 WHERE id=$1 RETURNING id, uid, amount, status, updated_at",
 		orderNumber, status, amount,
 	).Scan(&order.ID, &uid, &order.Amount, &order.Status, &order.UploadedAt)
 	if err != nil {
 		log.Printf("[ERROR] cannot update order %s status %v", orderNumber, err)
-		return &order, err
+		return order, err
 	}
 
-	// TODO: check err
-	user, _ := p.GetUserByUUID(ctx, uid)
-	order.Username = user.Login
+	_, err = tx.Exec(
+		ctx,
+		"INSERT INTO balances (uid, current_balance, withdrawn) VALUES ($1, $2, $3) ON CONFLICT (uid) DO UPDATE SET current_balance=current_balance+$2",
+		uid, amount, 0,
+	)
+	if err != nil {
+		log.Printf("[ERROR] cannot update balance for %s status %v", orderNumber, err)
+		return order, err
+	}
 
-	return &order, nil
+	return order, nil
 }
 
 func (p *Storage) GetOrders(ctx context.Context, uid uuid.UUID) []models.OrderResponse {
@@ -174,7 +188,11 @@ func (p *Storage) GetBalance(ctx context.Context, uid uuid.UUID) models.BalanceR
 	return balance
 }
 
-func (p *Storage) SaveWithdraw(ctx context.Context, user *models.User, order *models.Order) (err error) {
+// TODO: проверить работу
+// списание баллов в счет оплаты нового заказа
+// здесь проблема с балансом
+// если баланс меньше суммы списания, то списание не производится
+func (p *Storage) SaveWithdraw(ctx context.Context, user models.User, order models.Order) (err error) {
 	balance := models.Balance{}
 	// accrual := models.Accrual{}
 

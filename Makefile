@@ -30,6 +30,19 @@ run:
 	go run cmd/gophermart/main.go -d "host=localhost port=5432 user=postgres dbname=postgres password=postgres sslmode=disable"
 
 accrual:
-	cmd/accrual/accrual_linux_amd64 -a :8081 -d "host=localhost port=5432 user=postgres dbname=postgres password=postgres sslmode=disable"
+	cmd/accrual/accrual_linux_amd64 -a localhost:8081 -d "host=localhost port=5432 user=postgres dbname=postgres password=postgres sslmode=disable"
+
+test:
+	./gophermarttest \
+	-test.v -test.run=^TestGophermart$$ \
+	-gophermart-binary-path=cmd/gophermart/gophermart \
+	-gophermart-host=localhost \
+	-gophermart-port=8080 \
+	-gophermart-database-uri="postgresql://postgres:postgres@postgres/sslmode=disable" \
+	-accrual-binary-path=cmd/accrual/accrual_linux_amd64 \
+	-accrual-host=localhost \
+	-accrual-port=8081 \
+	-accrual-database-uri="postgresql://postgres:postgres@postgres/sslmode=disable"
 
 .PHONY: all build test clean tidy run accrual
+

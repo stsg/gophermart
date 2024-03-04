@@ -53,7 +53,7 @@ func (s Server) userRegisterCtrl(w http.ResponseWriter, r *http.Request) {
 func (s Server) userLoginCtrl(w http.ResponseWriter, r *http.Request) {
 	var req models.UserRegisterRequest
 
-	ctx, cancel := context.WithTimeout(r.Context(), 1*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
 	reqID := middleware.GetReqID(ctx)
@@ -128,6 +128,12 @@ func (s Server) userPostOrdersCtrl(w http.ResponseWriter, r *http.Request) {
 	}
 
 	order, err := s.Service.SaveOrder(ctx, user.Login, orderString)
+	if errors.Is(err, models.ErrOrderExists) {
+		log.Printf("[ERROR] reqID %s userPostOrdersCtrl, %v", reqID, err)
+		render.Status(r, http.StatusOK)
+		render.JSON(w, r, errors.Wrap(err, "duplicate order number"))
+		return
+	}
 	if err != nil {
 		log.Printf("[ERROR] reqID %s userPostOrdersCtrl, %v", reqID, err)
 		render.Status(r, http.StatusInternalServerError)
@@ -151,14 +157,13 @@ func (s Server) userPostOrdersCtrl(w http.ResponseWriter, r *http.Request) {
 
 	orderResponse := models.OrderResponse{
 		ID:         orderString,
-		Username:   user.Login,
 		Status:     string(order.AccrualStatus),
 		Amount:     lib.RoundFloat(float64(order.Amount)/100.00, 2),
 		UploadedAt: order.UploadedAt,
 	}
 
 	log.Print("[INFO] trying to send to Accrual service")
-	s.Service.ChanToAccurual <- &orderResponse
+	s.Service.ChanToAccurual <- orderResponse
 	log.Print("[INFO] sent to Accrual service")
 	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, "accepted")
