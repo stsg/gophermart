@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS orders (
     FOREIGN KEY (uid) REFERENCES users (uid)
 );
 
-CREATE TABLE IF NOT EXISTS accrual (
+CREATE TABLE IF NOT EXISTS withdrawals (
     order_id text UNIQUE NOT NULL PRIMARY KEY,
     uid uuid NOT NULL,
     amount int DEFAULT 0,

@@ -90,7 +90,7 @@ func (s Server) userPostOrdersCtrl(w http.ResponseWriter, r *http.Request) {
 	var orderString string
 	var orderNumber int64
 
-	ctx, cancel := context.WithTimeout(r.Context(), 50*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 1*time.Second)
 	defer cancel()
 
 	reqID := middleware.GetReqID(ctx)
@@ -128,30 +128,25 @@ func (s Server) userPostOrdersCtrl(w http.ResponseWriter, r *http.Request) {
 	}
 
 	order, err := s.Service.SaveOrder(ctx, user.Login, orderString)
+
 	if errors.Is(err, models.ErrOrderExists) {
 		log.Printf("[ERROR] reqID %s userPostOrdersCtrl, %v", reqID, err)
 		render.Status(r, http.StatusOK)
 		render.JSON(w, r, errors.Wrap(err, "duplicate order number"))
 		return
 	}
+
+	if errors.Is(err, models.ErrOrderBelongsAnotherUser) {
+		log.Printf("[ERROR] reqID %s userPostOrdersCtrl, %v", reqID, err)
+		render.Status(r, http.StatusConflict)
+		render.JSON(w, r, errors.Wrap(err, "order belongs another user"))
+		return
+	}
+
 	if err != nil {
 		log.Printf("[ERROR] reqID %s userPostOrdersCtrl, %v", reqID, err)
 		render.Status(r, http.StatusInternalServerError)
 		render.JSON(w, r, errors.Wrap(err, "cannot save order"))
-		return
-	}
-
-	if order.UID != user.UID {
-		log.Printf("[ERROR] reqID %s userPostOrdersCtrl, %v", reqID, err)
-		render.Status(r, http.StatusConflict)
-		render.JSON(w, r, errors.Wrap(err, "order uploaded by another user"))
-		return
-	}
-
-	if order.AccrualStatus != models.AccrualStatusNew {
-		log.Printf("[WARN] reqID %s userPostOrdersCtrl, %v", reqID, err)
-		render.Status(r, http.StatusOK)
-		render.JSON(w, r, errors.Wrap(err, "order uploaded by another user"))
 		return
 	}
 
@@ -162,15 +157,15 @@ func (s Server) userPostOrdersCtrl(w http.ResponseWriter, r *http.Request) {
 		UploadedAt: order.UploadedAt,
 	}
 
-	log.Print("[INFO] trying to send to Accrual service")
+	log.Printf("[INFO] trying to send order %s to Accrual service", orderString)
 	s.Service.ChanToAccurual <- orderResponse
-	log.Print("[INFO] sent to Accrual service")
+	log.Printf("[INFO] sent order %s to Accrual service", orderString)
 	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, "accepted")
 }
 
 func (s Server) userGetOrdersCtrl(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 50*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 1*time.Second)
 	defer cancel()
 
 	reqID := middleware.GetReqID(ctx)
@@ -203,7 +198,7 @@ func (s Server) userGetOrdersCtrl(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s Server) userBalanceCtrl(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 50*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 1*time.Second)
 	defer cancel()
 
 	reqID := middleware.GetReqID(ctx)
@@ -232,7 +227,7 @@ func (s Server) userWithdrawCtrl(w http.ResponseWriter, r *http.Request) {
 	var req models.WithdrawRequest
 	// var res models.WithdrawResponse
 
-	ctx, cancel := context.WithTimeout(r.Context(), 300*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 1*time.Second)
 	defer cancel()
 
 	reqID := middleware.GetReqID(ctx)
@@ -248,7 +243,7 @@ func (s Server) userWithdrawCtrl(w http.ResponseWriter, r *http.Request) {
 	err := render.DecodeJSON(r.Body, &req)
 	if err != nil {
 		log.Printf("[WARN] reqID %s userWithdrawCtrl, %v", reqID, err)
-		render.Status(r, http.StatusBadRequest)
+		render.Status(r, http.StatusUnprocessableEntity)
 		render.JSON(w, r, errors.Wrap(err, "failed to parse request body"))
 		return
 	}
@@ -256,7 +251,7 @@ func (s Server) userWithdrawCtrl(w http.ResponseWriter, r *http.Request) {
 	orderNumber, err := strconv.ParseInt(req.Number, 10, 64)
 	if err != nil {
 		log.Printf("[WARN] reqID %s userWithdrawCtrl, %v", reqID, err)
-		render.Status(r, http.StatusBadRequest)
+		render.Status(r, http.StatusUnprocessableEntity)
 		render.JSON(w, r, errors.Wrap(err, "cannot get witdraw number"))
 		return
 	}

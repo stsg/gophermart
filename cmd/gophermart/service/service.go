@@ -130,7 +130,7 @@ func (s *Service) SaveOrder(ctx context.Context, login string, orderNum string) 
 	})
 	if err != nil {
 		log.Printf("[ERROR] cannot save order %s %v", user.Login, err)
-		return models.Order{}, err
+		return order, err
 	}
 
 	return order, nil
@@ -140,9 +140,9 @@ func (s *Service) GetOrders(ctx context.Context, login string) ([]models.OrderRe
 	user, err := s.storage.GetUserByLogin(ctx, login)
 	if err != nil {
 		log.Printf("[ERROR] user %s not found %v", user.Login, err)
-		return nil, models.ErrUserNotFound
+		return []models.OrderResponse{}, models.ErrUserNotFound
 	}
-	return s.storage.GetOrders(ctx, user.UID), nil
+	return s.storage.GetOrders(ctx, user.UID)
 }
 
 func (s *Service) GetBalance(ctx context.Context, login string) (models.BalanceResponse, error) {
@@ -151,7 +151,7 @@ func (s *Service) GetBalance(ctx context.Context, login string) (models.BalanceR
 		log.Printf("[ERROR] user %s not found %v", user.Login, err)
 		return models.BalanceResponse{}, models.ErrUserNotFound
 	}
-	return s.storage.GetBalance(ctx, user.UID), nil
+	return s.storage.GetBalance(ctx, user.UID)
 }
 
 func (s *Service) SaveWithdraw(ctx context.Context, login string, orderNum string, amount int64) (err error) {

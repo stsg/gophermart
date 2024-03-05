@@ -11,9 +11,10 @@ var (
 	ErrUserWrong         = fmt.Errorf("user wrong")
 	ErrUserWrongPassword = fmt.Errorf("user password wrong")
 
-	ErrOrderNotFound = fmt.Errorf("order not found")
-	ErrOrderExists   = fmt.Errorf("order exists")
-	ErrOrderWrong    = fmt.Errorf("order wrong")
+	ErrOrderNotFound           = fmt.Errorf("order not found")
+	ErrOrderExists             = fmt.Errorf("order exists")
+	ErrOrderBelongsAnotherUser = fmt.Errorf("order belongs to another user")
+	ErrOrderWrong              = fmt.Errorf("order wrong")
 
 	ErrWithdrawalNotFound = fmt.Errorf("withdrawal not found")
 	ErrWithdrawalExists   = fmt.Errorf("withdrawal exists")

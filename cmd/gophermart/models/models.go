@@ -63,9 +63,8 @@ type Balance struct {
 }
 
 type BalanceResponse struct {
-	Current    float64   `json:"current"`
-	Withdrawn  float64   `json:"withdrawn"`
-	UploadedAt time.Time `json:"uploaded_at"`
+	Current   float64 `json:"current"`
+	Withdrawn float64 `json:"withdrawn"`
 }
 
 type WithdrawRequest struct {
