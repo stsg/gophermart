@@ -69,7 +69,7 @@ func (s Server) routes() chi.Router {
 			r.Get("/user/orders", s.userGetOrdersCtrl)
 			r.Get("/user/balance", s.userBalanceCtrl)
 			r.Post("/user/balance/withdraw", s.userWithdrawCtrl)
-			r.Get("/user/balance/withdrawals", s.userGetWithdrawalsCtrl)
+			r.Get("/user/withdrawals", s.userGetWithdrawalsCtrl)
 		})
 	})
 
