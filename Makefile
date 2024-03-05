@@ -26,5 +26,23 @@ tidy:
 	@ echo
 	go mod tidy
 
+run:
+	go run cmd/gophermart/main.go -d "host=localhost port=5432 user=postgres dbname=postgres password=postgres sslmode=disable" -r "http://localhost:8081" --dbg
 
-.PHONY: all build test clean tidy
+accrual:
+	cmd/accrual/accrual_linux_amd64 -a localhost:8081 -d "host=localhost port=5432 user=postgres dbname=postgres password=postgres sslmode=disable"
+
+test:
+	./gophermarttest \
+	-test.v -test.run=^TestGophermart$$ \
+	-gophermart-binary-path=cmd/gophermart/gophermart \
+	-gophermart-host=localhost \
+	-gophermart-port=8080 \
+	-gophermart-database-uri="host=localhost port=5432 user=postgres dbname=postgres password=postgres sslmode=disable" \
+	-accrual-binary-path=cmd/accrual/accrual_linux_amd64 \
+	-accrual-host=localhost \
+	-accrual-port=8081 \
+	-accrual-database-uri="host=localhost port=5432 user=postgres dbname=postgres password=postgres sslmode=disable" \
+
+.PHONY: all build test clean tidy run accrual
+
