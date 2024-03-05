@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS orders (
     uid uuid NOT NULL,
     amount int DEFAULT 0,
     status text NOT NULL DEFAULT 'NEW',
-    updated_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT NOW(),
     deleted boolean NOT NULL default false,
     FOREIGN KEY (uid) REFERENCES users (uid)
 );
@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS withdrawals (
     order_id text UNIQUE NOT NULL PRIMARY KEY,
     uid uuid NOT NULL,
     amount int DEFAULT 0,
+
     deleted boolean NOT NULL DEFAULT FALSE,
     FOREIGN KEY (order_id) REFERENCES orders (id)
 );
@@ -40,8 +41,8 @@ INSERT INTO
             ('nata', '$2a$10$7ixg.hUXcUF4YTHZfgrU.ePgOhvAZhu5sIaOa4TTTwgIfxIhVnMry');
 
 -- +goose Down
-DROP TABLE users;
+DROP TABLE withdrawals;
 DROP TABLE balances;
 DROP TABLE orders;
-DROP TABLE accrual;
-DROP EXTENSION IF EXISTS "uuid-ossp"
+DROP TABLE users;
+DROP EXTENSION IF EXISTS "uuid-ossp";
