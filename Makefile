@@ -32,7 +32,7 @@ run:
 accrual:
 	cmd/accrual/accrual_linux_amd64 -a localhost:8081 -d "host=localhost port=5432 user=postgres dbname=postgres password=postgres sslmode=disable"
 
-test:
+test: build
 	./gophermarttest \
 	-test.v -test.run=^TestGophermart$$ \
 	-gophermart-binary-path=cmd/gophermart/gophermart \
