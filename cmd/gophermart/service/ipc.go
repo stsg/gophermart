@@ -37,7 +37,7 @@ func (s *Service) SendToAccrual(ctx context.Context) {
 		}
 
 		if resp.StatusCode == http.StatusAccepted || resp.StatusCode == http.StatusConflict {
-			order, _ := s.storage.UpdateOrderStatus(ctx, order.ID, models.AccrualStatusProcessing, int64(order.Amount*100))
+			order, _ := s.storage.UpdateOrderStatus(ctx, order.ID, models.AccrualStatusProcessed, int64(order.Amount*100))
 			log.Print("[INFO] trying sending to ChanFromAccurual")
 			s.ChanFromAccurual <- &order
 			log.Print("[INFO] sent to ChanFromAccurual")

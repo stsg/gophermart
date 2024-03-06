@@ -330,6 +330,11 @@ func (p *Storage) UpdateOrderStatus(ctx context.Context, orderNumber string, sta
 		return order, err
 	}
 
+	err = tx.Commit(ctx)
+	if err != nil {
+		return order, err
+	}
+
 	return order, nil
 }
 
