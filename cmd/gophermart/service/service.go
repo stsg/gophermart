@@ -18,14 +18,14 @@ import (
 
 type Service struct {
 	storage          *postgres.Storage
-	ChanToAccurual   chan models.OrderResponse
-	ChanFromAccurual chan models.OrderResponse
+	ChanToAccurual   chan *models.OrderResponse
+	ChanFromAccurual chan *models.OrderResponse
 	accrualAddress   string
 }
 
 func New(storage *postgres.Storage, accrualAddress string) *Service {
-	toAccurual := make(chan models.OrderResponse, 1000)
-	fromAccurual := make(chan models.OrderResponse, 1000)
+	toAccurual := make(chan *models.OrderResponse, 1000)
+	fromAccurual := make(chan *models.OrderResponse, 1000)
 
 	return &Service{
 		storage:          storage,
