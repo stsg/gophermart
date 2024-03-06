@@ -168,7 +168,7 @@ func (p *Storage) GetOrders(ctx context.Context, uid uuid.UUID) ([]models.OrderR
 			log.Printf("[ERROR] cannot scan %v", err)
 			continue
 		}
-		order.Amount = lib.RoundFloat(float64(amount)/100.00, 2)
+		order.Amount = lib.RoundFloat(float64(amount)/100.00, 3)
 		orders = append(orders, order)
 	}
 	return orders, nil
@@ -204,9 +204,6 @@ func (p *Storage) GetBalance(ctx context.Context, uid uuid.UUID) (models.Balance
 // здесь проблема с балансом
 // если баланс меньше суммы списания, то списание не производится
 func (p *Storage) SaveWithdraw(ctx context.Context, user models.User, order models.Order) (err error) {
-	balance := models.Balance{}
-	// accrual := models.Accrual{}
-
 	ctx, cancel := context.WithTimeout(ctx, p.cfg.QueryTimeout)
 	defer cancel()
 
@@ -223,7 +220,7 @@ func (p *Storage) SaveWithdraw(ctx context.Context, user models.User, order mode
 		return models.ErrBalanceNotFound
 	}
 
-	if bal.Current < lib.RoundFloat(float64(order.Amount)/100.00, 2) {
+	if bal.Current < lib.RoundFloat(float64(order.Amount)/100.00, 3) {
 		log.Printf("[ERROR] not enough balance %v", err)
 		return models.ErrBalanceWrong
 	}
@@ -268,12 +265,43 @@ func (p *Storage) SaveWithdraw(ctx context.Context, user models.User, order mode
 	return nil
 }
 
-// func (p *Storage) GetBalanceByUID(ctx context.Context, uid uuid.UUID) (models.BalanceResponse, error) {
+func (p *Storage) GetWithdrawals(ctx context.Context, uid uuid.UUID) ([]models.WithdrawResponse, error) {
+	var withdraws []models.WithdrawResponse
+
+	ctx, cancel := context.WithTimeout(ctx, p.cfg.QueryTimeout)
+	defer cancel()
+
+	rows, err := p.db.Query(ctx, "SELECT order_id, amount, processed_at FROM withdrawals WHERE uid=$1", uid)
+	if errors.Is(err, pgx.ErrNoRows) {
+		log.Printf("[ERROR] no withdrawals %v", err)
+		return []models.WithdrawResponse{}, models.ErrWithdrawalNotFound
+	}
+	if err != nil {
+		log.Printf("[ERROR] cannot get withdrawals %v", err)
+		return []models.WithdrawResponse{}, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var amount int64
+		order := models.WithdrawResponse{}
+		err := rows.Scan(&order.Number, &amount, &order.ProcessedAt)
+		if err != nil {
+			log.Printf("[ERROR] cannot get order %v", err)
+			continue
+		}
+		order.Accrual = lib.RoundFloat(float64(amount)/100.00, 3)
+		withdraws = append(withdraws, order)
+	}
+	return withdraws, err
+}
 
 func (p *Storage) UpdateOrderStatus(ctx context.Context, orderNumber string, status models.AccrualStatus, amount int64) (models.OrderResponse, error) {
 	var uid uuid.UUID
 
 	order := models.OrderResponse{}
+
+	// ctx, cancel := context.WithTimeout(ctx, p.cfg.QueryTimeout)
+	// defer cancel()
 
 	tx, err := p.db.Begin(ctx)
 	if err != nil {
@@ -294,7 +322,7 @@ func (p *Storage) UpdateOrderStatus(ctx context.Context, orderNumber string, sta
 
 	_, err = tx.Exec(
 		ctx,
-		"INSERT INTO balances (uid, current_balance, withdrawn) VALUES ($1, $2, $3) ON CONFLICT (uid) DO UPDATE SET current_balance = balances.current_balance + $2",
+		"INSERT INTO balances (uid, current_balance, withdrawn) VALUES ($1, $2, $3) ON CONFLICT (uid) DO UPDATE SET current_balance = (balances.current_balance + $2) WHERE balances.uid = $1",
 		uid, amount, 0,
 	)
 	if err != nil {
@@ -302,47 +330,30 @@ func (p *Storage) UpdateOrderStatus(ctx context.Context, orderNumber string, sta
 		return order, err
 	}
 
-	return order, nil
-}
-
-func (p *Storage) GetWithdrawals(ctx context.Context, uid uuid.UUID) ([]models.WithdrawalsResponse, error) {
-	var orders []models.WithdrawalsResponse
-
-	rows, err := p.db.Query(ctx, "SELECT id, amount, updated_at FROM orders WHERE uid=$1 AND amount < 0", uid)
-	if errors.Is(err, pgx.ErrNoRows) {
-		log.Printf("[ERROR] no orders %v", err)
-		return []models.WithdrawalsResponse{}, models.ErrOrderNotFound
-	}
+	err = tx.Commit(ctx)
 	if err != nil {
-		log.Printf("[ERROR] cannot get orders %v", err)
-		return []models.WithdrawalsResponse{}, err
+		return order, err
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var amount int64
-		order := models.WithdrawalsResponse{}
-		err := rows.Scan(&order.Number, &amount, &order.ProcessedAt)
-		if err != nil {
-			log.Printf("[ERROR] cannot get order %v", err)
-			continue
-		}
-		order.Accrual = lib.RoundFloat(float64(amount)/100.00, 2)
-		orders = append(orders, order)
-	}
-	return orders, err
+
+	return order, nil
 }
 
 func (p *Storage) GetOrdersByStatus(ctx context.Context, status models.AccrualStatus) ([]models.OrderResponse, error) {
 	var orders []models.OrderResponse
+
+	// ctx, cancel := context.WithTimeout(ctx, p.cfg.QueryTimeout)
+	// defer cancel()
+
 	rows, err := p.db.Query(
 		ctx,
-		"SELECT id, uid, amount, status, updated_at FROM orders WHERE status=$1 and amount > 0 ORDER BY updated_at", status,
+		"SELECT id, amount, status, updated_at FROM orders WHERE status=$1", status,
 	)
 	if err != nil {
 		log.Printf("[ERROR] cannot get orders %v", err)
 		return orders, err
 	}
 	defer rows.Close()
+
 	for rows.Next() {
 		order := models.OrderResponse{}
 		err := rows.Scan(&order.ID, &order.Amount, &order.Status, &order.UploadedAt)

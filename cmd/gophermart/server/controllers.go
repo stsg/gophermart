@@ -158,7 +158,7 @@ func (s Server) userPostOrdersCtrl(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("[INFO] trying to send order %s to Accrual service", orderString)
-	s.Service.ChanToAccurual <- orderResponse
+	s.Service.ChanToAccurual <- &orderResponse
 	log.Printf("[INFO] sent order %s to Accrual service", orderString)
 	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, "accepted")

@@ -18,14 +18,14 @@ import (
 
 type Service struct {
 	storage          *postgres.Storage
-	ChanToAccurual   chan models.OrderResponse
-	ChanFromAccurual chan models.OrderResponse
+	ChanToAccurual   chan *models.OrderResponse
+	ChanFromAccurual chan *models.OrderResponse
 	accrualAddress   string
 }
 
 func New(storage *postgres.Storage, accrualAddress string) *Service {
-	toAccurual := make(chan models.OrderResponse, 100)
-	fromAccurual := make(chan models.OrderResponse, 100)
+	toAccurual := make(chan *models.OrderResponse, 1000)
+	fromAccurual := make(chan *models.OrderResponse, 1000)
 
 	return &Service{
 		storage:          storage,
@@ -176,7 +176,7 @@ func (s *Service) SaveWithdraw(ctx context.Context, login string, orderNum strin
 	return err
 }
 
-func (s *Service) GetWithdrawals(ctx context.Context, login string) ([]models.WithdrawalsResponse, error) {
+func (s *Service) GetWithdrawals(ctx context.Context, login string) ([]models.WithdrawResponse, error) {
 	user, err := s.storage.GetUserByLogin(ctx, login)
 	if err != nil {
 		log.Printf("[ERROR] user %s not found %v", user.Login, err)

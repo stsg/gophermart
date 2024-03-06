@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     password text NOT NULL,
     jwt text DEFAULT NULL,
     createrd_at timestamptz NOT NULL DEFAULT NOW(),
-    deleted boolean NOT NULL default false
+    deleted boolean NOT NULL default FALSE
 );
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -14,17 +14,16 @@ CREATE TABLE IF NOT EXISTS orders (
     uid uuid NOT NULL,
     amount int DEFAULT 0,
     status text NOT NULL DEFAULT 'NEW',
-    updated_at timestamptz NOT NULL DEFAULT now(),
-    deleted boolean NOT NULL default false,
-    FOREIGN KEY (uid) REFERENCES users (uid)
+    updated_at timestamptz NOT NULL DEFAULT NOW(),
+    deleted boolean NOT NULL default FALSE
 );
 
 CREATE TABLE IF NOT EXISTS withdrawals (
     order_id text UNIQUE NOT NULL PRIMARY KEY,
     uid uuid NOT NULL,
     amount int DEFAULT 0,
-    deleted boolean NOT NULL DEFAULT FALSE,
-    FOREIGN KEY (order_id) REFERENCES orders (id)
+    processed_at timestamptz NOT NULL DEFAULT NOW(),
+    deleted boolean NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS balances (
@@ -40,8 +39,8 @@ INSERT INTO
             ('nata', '$2a$10$7ixg.hUXcUF4YTHZfgrU.ePgOhvAZhu5sIaOa4TTTwgIfxIhVnMry');
 
 -- +goose Down
-DROP TABLE users;
+DROP TABLE withdrawals;
 DROP TABLE balances;
 DROP TABLE orders;
-DROP TABLE accrual;
-DROP EXTENSION IF EXISTS "uuid-ossp"
+DROP TABLE users;
+DROP EXTENSION IF EXISTS "uuid-ossp";
