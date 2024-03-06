@@ -176,7 +176,7 @@ func (s *Service) SaveWithdraw(ctx context.Context, login string, orderNum strin
 	return err
 }
 
-func (s *Service) GetWithdrawals(ctx context.Context, login string) ([]models.WithdrawalsResponse, error) {
+func (s *Service) GetWithdrawals(ctx context.Context, login string) ([]models.WithdrawResponse, error) {
 	user, err := s.storage.GetUserByLogin(ctx, login)
 	if err != nil {
 		log.Printf("[ERROR] user %s not found %v", user.Login, err)

@@ -37,8 +37,8 @@ func main() {
 
 	pCfg := &postgres.Config{
 		ConnectionString: opts.DBURI,
-		ConnectTimeout:   1 * time.Second,
-		QueryTimeout:     1 * time.Second,
+		ConnectTimeout:   10 * time.Second,
+		QueryTimeout:     10 * time.Second,
 		MigrationVersion: 1,
 	}
 

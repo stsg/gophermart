@@ -33,11 +33,11 @@ func (s *Service) SendToAccrual(ctx context.Context) {
 		resp, err := http.Post(url.String(), "application/json", req)
 		if err != nil {
 			s.ChanToAccurual <- order
-			log.Printf("[ERROR] cant get accrual %v", err)
+			log.Printf("[ERROR] cant get answer from accrual %v", err)
 		}
 
 		if resp.StatusCode == http.StatusAccepted || resp.StatusCode == http.StatusConflict {
-			order, _ = s.storage.UpdateOrderStatus(ctx, order.ID, models.AccrualStatusProcessing, 0)
+			order, _ = s.storage.UpdateOrderStatus(ctx, order.ID, models.AccrualStatusProcessing, int64(order.Amount*100))
 			log.Print("[INFO] trying sending to ChanFromAccurual")
 			s.ChanFromAccurual <- order
 			log.Print("[INFO] sent to ChanFromAccurual")

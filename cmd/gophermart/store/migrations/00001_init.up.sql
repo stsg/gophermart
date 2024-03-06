@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS withdrawals (
     order_id text UNIQUE NOT NULL PRIMARY KEY,
     uid uuid NOT NULL,
     amount int DEFAULT 0,
-
+    processed_at timestamptz NOT NULL DEFAULT NOW(),
     deleted boolean NOT NULL DEFAULT FALSE,
     FOREIGN KEY (order_id) REFERENCES orders (id)
 );
