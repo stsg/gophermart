@@ -193,8 +193,8 @@ func (p *Storage) GetBalance(ctx context.Context, uid uuid.UUID) (models.Balance
 		return models.BalanceResponse{}, err
 	}
 
-	balance.Current = lib.RoundFloat(float64(current)/100.00, 3)
-	balance.Withdrawn = lib.RoundFloat(float64(withdrawn)/100.00, 3)
+	balance.Current = lib.RoundFloat(float64(current)/100.00, 2)
+	balance.Withdrawn = lib.RoundFloat(float64(withdrawn)/100.00, 2)
 
 	return balance, err
 }
