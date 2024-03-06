@@ -168,7 +168,7 @@ func (p *Storage) GetOrders(ctx context.Context, uid uuid.UUID) ([]models.OrderR
 			log.Printf("[ERROR] cannot scan %v", err)
 			continue
 		}
-		order.Amount = lib.RoundFloat(float64(amount)/100.00, 2)
+		order.Amount = lib.RoundFloat(float64(amount)/100.00, 3)
 		orders = append(orders, order)
 	}
 	return orders, nil
@@ -193,8 +193,8 @@ func (p *Storage) GetBalance(ctx context.Context, uid uuid.UUID) (models.Balance
 		return models.BalanceResponse{}, err
 	}
 
-	balance.Current = lib.RoundFloat(float64(current)/100.00, 2)
-	balance.Withdrawn = lib.RoundFloat(float64(withdrawn)/100.00, 2)
+	balance.Current = lib.RoundFloat(float64(current)/100.00, 3)
+	balance.Withdrawn = lib.RoundFloat(float64(withdrawn)/100.00, 3)
 
 	return balance, err
 }
@@ -220,7 +220,7 @@ func (p *Storage) SaveWithdraw(ctx context.Context, user models.User, order mode
 		return models.ErrBalanceNotFound
 	}
 
-	if bal.Current < lib.RoundFloat(float64(order.Amount)/100.00, 2) {
+	if bal.Current < lib.RoundFloat(float64(order.Amount)/100.00, 3) {
 		log.Printf("[ERROR] not enough balance %v", err)
 		return models.ErrBalanceWrong
 	}
@@ -289,7 +289,7 @@ func (p *Storage) GetWithdrawals(ctx context.Context, uid uuid.UUID) ([]models.W
 			log.Printf("[ERROR] cannot get order %v", err)
 			continue
 		}
-		order.Accrual = lib.RoundFloat(float64(amount)/100.00, 2)
+		order.Accrual = lib.RoundFloat(float64(amount)/100.00, 3)
 		withdraws = append(withdraws, order)
 	}
 	return withdraws, err
