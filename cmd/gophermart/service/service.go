@@ -24,8 +24,8 @@ type Service struct {
 }
 
 func New(storage *postgres.Storage, accrualAddress string) *Service {
-	toAccurual := make(chan models.OrderResponse, 100)
-	fromAccurual := make(chan models.OrderResponse, 100)
+	toAccurual := make(chan models.OrderResponse, 1000)
+	fromAccurual := make(chan models.OrderResponse, 1000)
 
 	return &Service{
 		storage:          storage,
